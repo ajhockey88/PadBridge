@@ -14,6 +14,8 @@ final class PlayerPad {
     private static final int VENDOR = 0x1209, PRODUCT = 0x5042;
     // Microsoft's Xbox 360 controller, for games that only know Xbox pads.
     private static final int XBOX_VENDOR = 0x045e, XBOX_PRODUCT = 0x028e;
+    /** Rumble effects a game can upload at once. */
+    private static final int FF_EFFECTS = 4;
 
     private static final int[] KEYS = {
             Evdev.BTN_SOUTH, Evdev.BTN_EAST, Evdev.BTN_NORTH, Evdev.BTN_WEST, Evdev.BTN_TL, Evdev.BTN_TR,
@@ -58,9 +60,11 @@ final class PlayerPad {
         absInfo.append(absInfo(Evdev.ABS_HAT0X, -1, 1, 0, 0)).append(',').append(absInfo(Evdev.ABS_HAT0Y, -1, 1, 0, 0));
         return String.format(Locale.US,
                 "{\"id\":%d,\"command\":\"register\",\"name\":\"%s\",\"vid\":%d,\"pid\":%d,\"bus\":\"usb\","
+                        // Rumble: Android sees a vibrator, and the tool reports when a game uses it.
+                        + "\"ff_effects_max\":%d,"
                         + "\"configuration\":[{\"type\":%d,\"data\":[%d,%d]},{\"type\":%d,\"data\":[%s]},"
                         + "{\"type\":%d,\"data\":[%s]}],\"abs_info\":[%s]}",
-                player, name(), xbox ? XBOX_VENDOR : VENDOR, xbox ? XBOX_PRODUCT : PRODUCT + player,
+                player, name(), xbox ? XBOX_VENDOR : VENDOR, xbox ? XBOX_PRODUCT : PRODUCT + player, FF_EFFECTS,
                 Evdev.UI_SET_EVBIT, Evdev.EV_KEY, Evdev.EV_ABS, Evdev.UI_SET_KEYBIT, keys,
                 Evdev.UI_SET_ABSBIT, absBits, absInfo);
     }

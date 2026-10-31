@@ -27,9 +27,9 @@ import org.json.JSONObject;
  * It talks to the app through two files in the app's folder: the app writes config.json, the
  * engine writes status.json.
  */
-public final class Engine implements PhysicalPad.Listener {
+public final class Engine implements PhysicalPad.Listener, VirtualPads.Listener {
     /** Bumped when the engine changes; the app restarts an engine that doesn't match. */
-    static final int VERSION = 2;
+    static final int VERSION = 3;
     /** struct input_event: 24 bytes with 64-bit timestamps, 16 with 32-bit ones. */
     static final int EVENT_SIZE = System.getProperty("os.arch", "").contains("64") ? 24 : 16;
     private static final int BITS_PER_WORD = EVENT_SIZE == 24 ? 64 : 32;
@@ -52,15 +52,16 @@ public final class Engine implements PhysicalPad.Listener {
         this.apk = apk;
         config = new File(dir, "config.json");
         status = new File(dir, "status.json");
-        players = new VirtualPads(new File(dir, "uinput.log"));
+        players = new VirtualPads(new File(dir, "uinput.log"), this);
     }
 
     public static void main(String[] args) {
         if (args.length < 2) {
-            System.err.println("usage: Engine <folder> <apk>");
+            System.err.println("usage: Engine <folder> <apk> [native library folder]");
             System.exit(2);
         }
         log("PadBridge engine " + VERSION + " starting, " + EVENT_SIZE + "-byte events");
+        if (args.length > 2) Native.load(args[2]);
         new Engine(new File(args[0]), new File(args[1])).run();
     }
 
@@ -119,7 +120,7 @@ public final class Engine implements PhysicalPad.Listener {
         synchronized (this) {
             if (next.keepPlayers < cfg.keepPlayers) fewerPlayers = true;
             cfg = next;
-            for (PhysicalPad p : pads.values()) p.mapper.nintendo = cfg.nintendo.contains(p.dev.key());
+            for (PhysicalPad p : pads.values()) p.mapper.apply(cfg.nintendo.contains(p.dev.key()), cfg.pad(p.dev.key()));
         }
         log("config: " + text.replace('\n', ' '));
         return true;
@@ -141,7 +142,7 @@ public final class Engine implements PhysicalPad.Listener {
             if (ranges == null) continue; // not readable yet; try again next scan
             InputScan.applyRanges(d, ranges);
             PhysicalPad p = new PhysicalPad(d, now);
-            p.mapper.nintendo = cfg.nintendo.contains(d.key());
+            p.mapper.apply(cfg.nintendo.contains(d.key()), cfg.pad(d.key()));
             synchronized (this) {
                 pads.put(id, p);
             }
@@ -217,6 +218,31 @@ public final class Engine implements PhysicalPad.Listener {
         refresh(pad.player);
     }
 
+    private final java.util.concurrent.ExecutorService motor = java.util.concurrent.Executors.newSingleThreadExecutor();
+
+    /** A game rumbled a player pad: rumble every controller on that player. */
+    @Override
+    public void onRumble(int player, final boolean on) {
+        List<PhysicalPad> targets = new ArrayList<>();
+        synchronized (this) {
+            for (PhysicalPad p : pads.values()) if (p.player == player && p.isOpen()) targets.add(p);
+        }
+        for (PhysicalPad p : targets) {
+            final int strength = cfg.pad(p.dev.key()).rumble;
+            if (strength <= 0) continue;
+            if (!p.rumble(on, strength) && p.builtin) {
+                // The Thor's controls have no rumble of their own: use the Thor's motor.
+                motor.execute(new Runnable() {
+                    @Override public void run() {
+                        if (on) exec("cmd", "vibrator_manager", "synced", "oneshot", "-a", "5000",
+                                String.valueOf(Math.max(1, Math.round(255 * strength / 100f))));
+                        else exec("cmd", "vibrator_manager", "cancel");
+                    }
+                });
+            }
+        }
+    }
+
     /** Sends a player's state: every open controller on that player, merged. */
     private synchronized void refresh(int player) {
         if (player <= 0) return;
@@ -248,6 +274,9 @@ public final class Engine implements PhysicalPad.Listener {
                     d.put("player", p.player);
                     d.put("active", p.isOpen());
                     d.put("error", p.error);
+                    d.put("intervalMs", Math.round(p.intervalMs * 10) / 10.0);
+                    d.put("addedMs", Math.round(p.addedMs * 100) / 100.0);
+                    d.put("cantRumble", p.cantRumble && !p.builtin);
                     list.put(d);
                 }
             }

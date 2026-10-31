@@ -16,6 +16,7 @@ public class EngineTest {
         mapsAxesAndButtons();
         triggersLookTheSame();
         routesPlayers();
+        controllerSettings();
         playerPadsReportChanges();
         if (failures > 0) {
             System.out.println(failures + " FAILED");
@@ -217,6 +218,31 @@ public class EngineTest {
         swapped.pins.put(party.get(4).key(), 1);
         p = Routing.assign(party, swapped);
         check("party: swapped Players 1 and 5", p[0] == 5 && p[4] == 1 && p[1] == 2 && p[5] == 6);
+    }
+
+    static void controllerSettings() throws Exception {
+        Routing.Config c = new Routing.Config();
+        Routing.PadSettings ps = new Routing.PadSettings();
+        ps.rumble = 40;
+        ps.deadzone = 10;
+        ps.invertRy = true;
+        c.pads.put("045e:0b13:aa", ps);
+        Routing.Config back = Routing.Config.fromJson(c.toJson().toString());
+        Routing.PadSettings got = back.pad("045e:0b13:aa");
+        check("pad settings survive JSON", got.rumble == 40 && got.deadzone == 10 && got.invertRy);
+        check("other pads get the defaults", back.pad("other").rumble == 70 && back.pad("other").deadzone == 0);
+
+        PadMapper m = new PadMapper(devices().get(1));
+        m.apply(false, ps);
+        PadState out = new PadState();
+        m.handle(Evdev.EV_ABS, Evdev.ABS_X, 32768 + 3000); // a drifting stick, about 9% right
+        m.handle(Evdev.EV_ABS, Evdev.ABS_RZ, 0); // right stick pushed up (RZ on Bluetooth Xbox)
+        m.normalizedInto(out);
+        check("deadzone hides drift", out.axes[PadState.LX] == 0f);
+        check("inverted right stick: up reads down", near(out.axes[PadState.RY], 1f));
+        m.handle(Evdev.EV_ABS, Evdev.ABS_X, 65535);
+        m.normalizedInto(out);
+        check("deadzone keeps the edge full", near(out.axes[PadState.LX], 1f));
     }
 
     static void playerPadsReportChanges() throws Exception {

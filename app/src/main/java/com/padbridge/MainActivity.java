@@ -489,6 +489,8 @@ public class MainActivity extends Activity implements ShizukuClient.Listener {
         notes.add(ctl.builtin ? "Built-in" : ctl.connection);
         if (prefs.pin(ctl.key) > 0) notes.add("📌 Always here");
         if (prefs.nintendo(ctl.key)) notes.add("A/B swapped");
+        String speed = ControllerSettings.shortSpeed(ctl);
+        if (!speed.isEmpty()) notes.add(speed);
         TextView s = Ui.plain(this, TextUtils.join(" · ", notes), 12, Ui.SUB);
         s.setSingleLine(true);
         s.setEllipsize(TextUtils.TruncateAt.END);
@@ -583,7 +585,7 @@ public class MainActivity extends Activity implements ShizukuClient.Listener {
         box.addView(gap, new LinearLayout.LayoutParams(1, (int) (10 * d)));
         menuItem(box, dialog, pin == Routing.AUTO, "✨", "Automatic (follows " + MODES[modeIndex()][2] + ")", ctl, Routing.AUTO);
         menuItem(box, dialog, pin == Routing.OFF, "🚫", "Leave it to Android", ctl, Routing.OFF);
-        menuItem(box, dialog, prefs.nintendo(ctl.key), "🔀", "Nintendo layout (swap A/B and X/Y)", ctl, 100);
+        menuItem(box, dialog, false, "🎛️", "Rumble, sticks and buttons…", ctl, 102);
         menuItem(box, dialog, ctl.builtin, "📱", "These are the Thor's own controls", ctl, 101);
         dialog[0] = new AlertDialog.Builder(this)
                 .setTitle(ctl.builtin ? "Thor controls" : ctl.name)
@@ -607,8 +609,20 @@ public class MainActivity extends Activity implements ShizukuClient.Listener {
         box.addView(t);
     }
 
-    /** A player (or Automatic, or Leave it to Android), 100 for Nintendo layout, 101 for Thor controls. */
+    /**
+     * A player (or Automatic, or Leave it to Android), 100 for Nintendo layout, 101 for Thor
+     * controls, 102 for the controller's settings.
+     */
     private void pickFor(EngineControl.Controller ctl, int a) {
+        if (a == 102) {
+            ControllerSettings.show(this, ctl.key, ctl.builtin ? "Thor controls" : ctl.name, new Runnable() {
+                @Override public void run() {
+                    shown = "";
+                    refresh();
+                }
+            });
+            return;
+        }
         if (a == 100) prefs.setNintendo(ctl.key, !prefs.nintendo(ctl.key));
         else if (a == 101) prefs.setBuiltin(ctl.builtin && ctl.key.equals(prefs.builtin()) ? "" : ctl.key);
         else prefs.setPin(ctl.key, a);

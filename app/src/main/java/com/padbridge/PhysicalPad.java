@@ -20,6 +20,16 @@ final class PhysicalPad {
     /** The Thor's own controls. */
     boolean builtin;
     String error = "";
+    /**
+     * How often the controller reports (ms between reports while it's in use), and how long
+     * PadBridge takes from a report to passing it to the player pad. Averages; 0 until known.
+     */
+    volatile float intervalMs, addedMs;
+    /** It turned down a rumble effect. */
+    volatile boolean cantRumble;
+    private boolean monotonic;
+    private long lastReportUs;
+    private int fdNum = -1, effect = -1, effectStrength;
     private FileInputStream in;
     private Thread reader;
     private volatile boolean open;
@@ -51,6 +61,14 @@ final class PhysicalPad {
         open = true;
         error = "";
         mapper.state.clear();
+        synchronized (this) {
+            fdNum = Native.loaded() ? Native.fd(fd) : -1;
+            effect = -1;
+        }
+        // Timestamps on the same clock as System.nanoTime(), to measure PadBridge's delay.
+        monotonic = fdNum >= 0 && Native.monotonicClock(fdNum) == 0;
+        intervalMs = addedMs = 0;
+        lastReportUs = 0;
         final int size = Engine.EVENT_SIZE;
         reader = new Thread(new Runnable() {
             @Override public void run() {
@@ -61,15 +79,22 @@ final class PhysicalPad {
                         int n = in.read(buf);
                         if (n <= 0) break;
                         boolean frame = false;
+                        long reportUs = 0;
                         for (int off = 0; off + size <= n; off += size) {
                             int p = off + tail;
                             int type = (buf[p] & 0xff) | (buf[p + 1] & 0xff) << 8;
                             int code = (buf[p + 2] & 0xff) | (buf[p + 3] & 0xff) << 8;
                             int value = (buf[p + 4] & 0xff) | (buf[p + 5] & 0xff) << 8
                                     | (buf[p + 6] & 0xff) << 16 | buf[p + 7] << 24;
-                            if (mapper.handle(type, code, value)) frame = true;
+                            if (mapper.handle(type, code, value)) {
+                                frame = true;
+                                reportUs = timestampUs(buf, off, size);
+                            }
                         }
-                        if (frame) listener.onFrame(PhysicalPad.this);
+                        if (frame) {
+                            listener.onFrame(PhysicalPad.this);
+                            measure(reportUs);
+                        }
                     }
                 } catch (IOException ignored) {
                     // Unplugged, or closed by close().
@@ -86,8 +111,61 @@ final class PhysicalPad {
         return true;
     }
 
+    private static long timestampUs(byte[] b, int off, int size) {
+        int w = size == 24 ? 8 : 4;
+        return le(b, off, w) * 1000000L + le(b, off + w, w);
+    }
+
+    private static long le(byte[] b, int off, int bytes) {
+        long v = 0;
+        for (int i = bytes - 1; i >= 0; i--) v = v << 8 | (b[off + i] & 0xff);
+        return v;
+    }
+
+    /** Updates the averages after a report was passed on. */
+    private void measure(long reportUs) {
+        if (reportUs <= 0) return;
+        long nowUs = monotonic ? System.nanoTime() / 1000 : System.currentTimeMillis() * 1000;
+        long added = nowUs - reportUs;
+        if (added >= 0 && added < 1000000) addedMs = average(addedMs, added / 1000f);
+        long gap = reportUs - lastReportUs;
+        // Only while it's in use: a pause between presses isn't the controller's rate.
+        if (lastReportUs != 0 && gap > 0 && gap < 60000) intervalMs = average(intervalMs, gap / 1000f);
+        lastReportUs = reportUs;
+    }
+
+    private static float average(float avg, float v) { return avg == 0 ? v : avg * 0.9f + v * 0.1f; }
+
+    /**
+     * Starts or stops rumble at this strength (1 to 100), on this controller's open node. False
+     * if it can't rumble. Effects last at most 5 seconds, in case a stop never comes.
+     */
+    synchronized boolean rumble(boolean on, int strength) {
+        if (!open || fdNum < 0 || cantRumble) return false;
+        if (!on) {
+            if (effect >= 0) Native.rumblePlay(fdNum, effect, 0);
+            return true;
+        }
+        if (effect < 0 || strength != effectStrength) {
+            int magnitude = Math.round(0xffff * Math.min(100, strength) / 100f);
+            int id = Native.rumbleUpload(fdNum, effect, magnitude, magnitude, 5000);
+            if (id < 0) {
+                cantRumble = true;
+                effect = -1;
+                return false;
+            }
+            effect = id;
+            effectStrength = strength;
+        }
+        return Native.rumblePlay(fdNum, effect, 1) == 0;
+    }
+
     /** Lets go of the controller; Android sees it again. */
     void close() {
+        synchronized (this) {
+            fdNum = -1; // the kernel drops this file's effects when it closes
+            effect = -1;
+        }
         open = false;
         closeQuietly();
         mapper.state.clear();

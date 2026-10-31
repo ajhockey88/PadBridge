@@ -20,7 +20,7 @@ final class Prefs {
     static final String KEY_BOTH_SCREENS = "both_screens";
     static final String KEY_SWAP_SCREENS = "swap_screens";
     private static final String KEY_PINS = "pins", KEY_NINTENDO = "nintendo", KEY_BUILTIN = "builtin",
-            KEY_KNOWN = "known";
+            KEY_KNOWN = "known", KEY_PADS = "pads";
 
     private final SharedPreferences sp;
 
@@ -71,6 +71,19 @@ final class Prefs {
         sp.edit().putString(KEY_NINTENDO, n.toString()).apply();
     }
 
+    /** A controller's rumble, deadzone and stick settings. */
+    Routing.PadSettings padSettings(String key) { return Routing.PadSettings.fromJson(object(KEY_PADS).optJSONObject(key)); }
+
+    void setPadSettings(String key, Routing.PadSettings s) {
+        JSONObject all = object(KEY_PADS);
+        try {
+            if (s == null || s.isDefault()) all.remove(key);
+            else all.put(key, s.toJson());
+        } catch (JSONException ignored) {
+        }
+        sp.edit().putString(KEY_PADS, all.toString()).apply();
+    }
+
     /** The controller marked as the Thor's own controls, or "" to detect them. */
     String builtin() { return sp.getString(KEY_BUILTIN, ""); }
     void setBuiltin(String key) { sp.edit().putString(KEY_BUILTIN, key).apply(); }
@@ -95,6 +108,7 @@ final class Prefs {
         sp.edit().putString(KEY_KNOWN, k.toString()).apply();
         setPin(key, Routing.AUTO);
         setNintendo(key, false);
+        setPadSettings(key, null);
         if (key.equals(builtin())) setBuiltin("");
     }
 
@@ -115,6 +129,11 @@ final class Prefs {
         for (Iterator<String> it = n.keys(); it.hasNext(); ) keys.add(it.next());
         c.nintendo.addAll(keys);
         c.builtin = builtin();
+        JSONObject pads = object(KEY_PADS);
+        for (Iterator<String> it = pads.keys(); it.hasNext(); ) {
+            String k = it.next();
+            c.pads.put(k, Routing.PadSettings.fromJson(pads.optJSONObject(k)));
+        }
         return c;
     }
 

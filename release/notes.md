@@ -4,4 +4,8 @@
 - **−** and **+** on the main screen set how many players are ready, and the cards fit four or eight at a glance
 - **Thor first**, **Controller first** or **Both Player 1**, and 🔁 **Swap** on the main screen (with more than two players, tap the two to swap)
 - Fix any controller to a player, swap A/B and X/Y for Nintendo-style pads, or leave one to Android
+- 📳 **Rumble** from games reaches your controllers (the Thor's own controls use the Thor's motor)
+- 🎛️ Each controller has its own **rumble strength**, **stick deadzone**, **invert right stick** and **Nintendo layout**
+- ⚡ See how quickly each controller reports, and how little PadBridge adds
+- ℹ️ Settings > About with the MIT license and credits
 - 🧪 Controller test on the top screen shows each player live

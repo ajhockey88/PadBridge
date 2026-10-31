@@ -13,6 +13,9 @@ final class PadMapper {
 
     /** Swaps A with B and X with Y, for controllers with Nintendo's button layout. */
     volatile boolean nintendo;
+    /** Stick deadzone, 0 to 0.3 of the stick's reach. */
+    volatile float deadzone;
+    volatile boolean invertRy;
 
     final PadState state = new PadState();
     /** Analog triggers seen, so their digital buttons don't fight them. */
@@ -121,6 +124,27 @@ final class PadMapper {
         if (!analogR2 && state.pressed(PadState.R2)) out.axes[PadState.RT] = 1f;
         if (analogL2 && state.axes[PadState.LT] > 0.5f) out.set(PadState.L2, true);
         if (analogR2 && state.axes[PadState.RT] > 0.5f) out.set(PadState.R2, true);
+        deadzone(out, PadState.LX, PadState.LY);
+        deadzone(out, PadState.RX, PadState.RY);
+        if (invertRy) out.axes[PadState.RY] = -out.axes[PadState.RY];
+    }
+
+    /** Ignores a stick near its center, and scales the rest so the edge is still full. */
+    private void deadzone(PadState out, int x, int y) {
+        float dz = deadzone;
+        if (dz <= 0) return;
+        float vx = out.axes[x], vy = out.axes[y];
+        float m = (float) Math.hypot(vx, vy);
+        float scale = m <= dz ? 0f : Math.min(1f, (m - dz) / (1f - dz)) / m;
+        out.axes[x] = vx * scale;
+        out.axes[y] = vy * scale;
+    }
+
+    /** Takes this controller's settings. */
+    void apply(boolean nintendo, Routing.PadSettings s) {
+        this.nintendo = nintendo;
+        deadzone = s.deadzone / 100f;
+        invertRy = s.invertRy;
     }
 
     private static float clamp(float v, float lo, float hi) {

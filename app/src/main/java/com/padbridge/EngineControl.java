@@ -31,8 +31,10 @@ final class EngineControl {
     /** A controller as the engine last reported it. */
     static final class Controller {
         String key, name, connection, error;
-        boolean builtin, active;
+        boolean builtin, active, cantRumble;
         int player;
+        /** ms between reports, and ms PadBridge adds; 0 until known. */
+        double intervalMs, addedMs;
     }
 
     /** What the engine last reported. */
@@ -86,6 +88,9 @@ final class EngineControl {
                 c.builtin = d.optBoolean("builtin");
                 c.active = d.optBoolean("active");
                 c.player = d.optInt("player");
+                c.intervalMs = d.optDouble("intervalMs", 0);
+                c.addedMs = d.optDouble("addedMs", 0);
+                c.cantRumble = d.optBoolean("cantRumble");
                 s.controllers.add(c);
             }
         } catch (JSONException ignored) {
@@ -125,10 +130,11 @@ final class EngineControl {
         pushConfig(context);
         String apk = context.getApplicationInfo().sourceDir;
         String dir = folder(context).getAbsolutePath();
+        String lib = context.getApplicationInfo().nativeLibraryDir;
         // setsid: the engine outlives this shell, Shizuku's process for it, and the app.
         ShizukuClient.runShell("pkill -x " + PROCESS + "; cd /; CLASSPATH='" + apk + "' setsid app_process "
                 + "/system/bin --nice-name=" + PROCESS + " " + Engine.class.getName() + " '" + dir + "' '" + apk
-                + "' </dev/null >'" + dir + "/engine.log' 2>&1 &");
+                + "' '" + lib + "' </dev/null >'" + dir + "/engine.log' 2>&1 &");
     }
 
     /** Switches PadBridge off: the engine gives every controller back and removes the player pads. */

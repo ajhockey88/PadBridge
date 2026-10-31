@@ -42,7 +42,7 @@ public class SettingsActivity extends Activity {
     private float d;
 
     // Tabs down the left; the chosen section's settings on the right, as cards.
-    private static final String[] TABS = {"🎮 Players", "🕹️ Controllers", "🖥️ Screens", "📳 Haptics", "🔄 Updates"};
+    private static final String[] TABS = {"🎮 Players", "🕹️ Controllers", "🖥️ Screens", "📳 Haptics", "🔄 Updates", "ℹ️ About"};
     private static final int BG = Ui.BG, SIDE = Ui.SIDE, CARD = Ui.CARD, ACCENT = Ui.ACCENT, SUB = Ui.SUB;
     /** The tab on show, kept when Settings rebuilds itself. */
     private static int tab;
@@ -176,9 +176,13 @@ public class SettingsActivity extends Activity {
                 header("Haptics", "Pick a feel and strength for each action.");
                 hapticsSection();
                 break;
-            default:
+            case 4:
                 header("Updates", "Get the newest PadBridge from GitHub");
                 updateSection();
+                break;
+            default:
+                header("About", "PadBridge " + versionName() + ", its license and thanks");
+                aboutSection();
                 break;
         }
         scroll.scrollTo(0, 0);
@@ -373,10 +377,17 @@ public class SettingsActivity extends Activity {
 
             LinearLayout actions = new LinearLayout(this);
             actions.setPadding(0, (int) (8 * d), 0, 0);
-            final boolean nin = prefs.nintendo(key);
-            actions.addView(action((nin ? "✅" : "🔀") + "  Nintendo layout", new Runnable() {
-                @Override public void run() { prefs.setNintendo(key, !nin); }
-            }));
+            final String shown = builtin ? "Thor controls" : name;
+            TextView tune = action("🎛️  Rumble, sticks and buttons", null);
+            tune.setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View v) {
+                    Haptics.play(SettingsActivity.this, Haptics.SETTING);
+                    ControllerSettings.show(SettingsActivity.this, key, shown, new Runnable() {
+                        @Override public void run() { showTab(1); }
+                    });
+                }
+            });
+            actions.addView(tune);
             final boolean marked = key.equals(prefs.builtin());
             actions.addView(action((marked ? "✅" : "📱") + "  Thor controls", new Runnable() {
                 @Override public void run() { prefs.setBuiltin(marked ? "" : key); }
@@ -386,8 +397,9 @@ public class SettingsActivity extends Activity {
             }));
             c.addView(actions);
         }
-        TextView note = plain("Nintendo layout swaps A with B and X with Y. Tap Thor controls on the Thor's own "
-                + "controls if PadBridge didn't spot them (they show 📱).", 12, Ui.DIM);
+        TextView note = plain("Rumble, sticks and buttons has rumble strength, stick deadzone, invert and Nintendo "
+                + "layout. Tap Thor controls on the Thor's own controls if PadBridge didn't spot them (they show 📱).",
+                12, Ui.DIM);
         note.setPadding((int) (4 * d), (int) (4 * d), 0, 0);
         page.addView(note);
     }
@@ -438,6 +450,51 @@ public class SettingsActivity extends Activity {
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
+    }
+
+    // ---- About ---------------------------------------------------------------------------------
+
+    /** The repository's LICENSE file, its paragraphs unwrapped so they fit the screen. */
+    private static final String LICENSE = "MIT License\n\n"
+            + "Copyright (c) 2026 Anthony (ajhockey88)\n\n"
+            + "Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\n\n"
+            + "The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.\n\n"
+            + "THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.";
+
+    private void aboutSection() {
+        LinearLayout c = card();
+        TextView t = plain("🎮 PadBridge " + versionName(), 16, Color.WHITE);
+        t.setTypeface(Typeface.DEFAULT_BOLD);
+        c.addView(t);
+        TextView s = plain("The Thor's controls and your controllers as fixed players. Made for the AYN Thor by "
+                + "ajhockey88. github.com/ajhockey88/PadBridge", 13, SUB);
+        s.setPadding(0, (int) (4 * d), 0, 0);
+        c.addView(s);
+
+        c = card();
+        t = plain("📄 License: MIT", 16, Color.WHITE);
+        t.setTypeface(Typeface.DEFAULT_BOLD);
+        c.addView(t);
+        c.addView(plain("PadBridge is free and open source. You can use, copy, change and share it, as long as the "
+                + "notice below comes with it.", 13, SUB));
+        TextView body = plain(LICENSE, 12, Ui.DIM);
+        body.setLineSpacing(0, 1.1f);
+        body.setPadding((int) (10 * d), (int) (10 * d), (int) (10 * d), (int) (10 * d));
+        body.setBackground(Ui.round(Color.rgb(0x0c, 0x0e, 0x12), 8 * d));
+        LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT);
+        blp.topMargin = (int) (8 * d);
+        c.addView(body, blp);
+
+        c = card();
+        t = plain("🙏 Thanks", 16, Color.WHITE);
+        t.setTypeface(Typeface.DEFAULT_BOLD);
+        c.addView(t);
+        TextView thanks = plain("• Shizuku by RikkaApps (Apache License 2.0): PadBridge uses its API classes to start "
+                + "its engine.\n• Docking Enhancer by Ezequiel-CE: the idea. None of its code is used.", 13, SUB);
+        thanks.setLineSpacing(0, 1.15f);
+        thanks.setPadding(0, (int) (4 * d), 0, 0);
+        c.addView(thanks);
     }
 
     // ---- Diagnostics ---------------------------------------------------------------------------
@@ -539,20 +596,25 @@ public class SettingsActivity extends Activity {
         releaseNotesSection();
     }
 
-    /** This version's release notes (bundled with the app by build.sh), under the update buttons. */
-    private void releaseNotesSection() {
-        String notes;
+    /** A text file bundled with the app by build.sh, or null. */
+    private String asset(String name) {
         try {
-            java.io.InputStream in = getAssets().open("release-notes.md");
+            java.io.InputStream in = getAssets().open(name);
             java.io.ByteArrayOutputStream buf = new java.io.ByteArrayOutputStream();
             byte[] b = new byte[8192];
             int n;
             while ((n = in.read(b)) > 0) buf.write(b, 0, n);
             in.close();
-            notes = buf.toString("UTF-8");
+            return buf.toString("UTF-8");
         } catch (java.io.IOException e) {
-            return; // a build without notes: no section
+            return null;
         }
+    }
+
+    /** This version's release notes (bundled with the app by build.sh), under the update buttons. */
+    private void releaseNotesSection() {
+        String notes = asset("release-notes.md");
+        if (notes == null) return; // a build without notes: no section
         list = card();
         TextView title = plain("📄 Release notes · PadBridge " + versionName(), 16, Color.WHITE);
         title.setPadding(0, 0, 0, (int) (6 * d));

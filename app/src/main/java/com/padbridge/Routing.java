@@ -25,6 +25,32 @@ final class Routing {
     static final String THOR_FIRST = "thor_first", CONTROLLER_FIRST = "controller_first", SHARED = "shared";
     static final String STANDARD = "standard", XBOX = "xbox";
 
+    /** One controller's own settings. */
+    static final class PadSettings {
+        static final PadSettings DEFAULT = new PadSettings();
+        /** Rumble strength, 0 (off) to 100. */
+        int rumble = 70;
+        /** Stick deadzone, 0 to 30 percent. */
+        int deadzone;
+        /** Pushing the right stick up looks down, as in flight games. */
+        boolean invertRy;
+
+        boolean isDefault() { return rumble == DEFAULT.rumble && deadzone == 0 && !invertRy; }
+
+        JSONObject toJson() throws JSONException {
+            return new JSONObject().put("rumble", rumble).put("deadzone", deadzone).put("invertRy", invertRy);
+        }
+
+        static PadSettings fromJson(JSONObject o) {
+            PadSettings s = new PadSettings();
+            if (o == null) return s;
+            s.rumble = Math.max(0, Math.min(100, o.optInt("rumble", s.rumble)));
+            s.deadzone = Math.max(0, Math.min(30, o.optInt("deadzone", 0)));
+            s.invertRy = o.optBoolean("invertRy", false);
+            return s;
+        }
+    }
+
     /** The settings the app hands the engine (config.json). */
     static final class Config {
         boolean enabled = true;
@@ -37,6 +63,13 @@ final class Routing {
         final Set<String> nintendo = new HashSet<>();
         /** The controller the user marked as the Thor's own controls; empty to detect it. */
         String builtin = "";
+        /** Controllers' own settings, for those that changed any. */
+        final Map<String, PadSettings> pads = new HashMap<>();
+
+        PadSettings pad(String key) {
+            PadSettings s = pads.get(key);
+            return s != null ? s : PadSettings.DEFAULT;
+        }
 
         JSONObject toJson() throws JSONException {
             JSONObject o = new JSONObject();
@@ -51,6 +84,9 @@ final class Routing {
             for (String k : nintendo) n.put(k);
             o.put("nintendo", n);
             o.put("builtin", builtin);
+            JSONObject ps = new JSONObject();
+            for (Map.Entry<String, PadSettings> e : pads.entrySet()) ps.put(e.getKey(), e.getValue().toJson());
+            o.put("pads", ps);
             return o;
         }
 
@@ -73,6 +109,12 @@ final class Routing {
                 JSONArray n = o.optJSONArray("nintendo");
                 for (int i = 0; n != null && i < n.length(); i++) c.nintendo.add(n.getString(i));
                 c.builtin = o.optString("builtin", "");
+                JSONObject ps = o.optJSONObject("pads");
+                JSONArray keys = ps != null ? ps.names() : null;
+                for (int i = 0; keys != null && i < keys.length(); i++) {
+                    String k = keys.getString(i);
+                    c.pads.put(k, PadSettings.fromJson(ps.optJSONObject(k)));
+                }
             } catch (JSONException ignored) {
             }
             return c;

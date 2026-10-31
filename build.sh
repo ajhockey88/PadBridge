@@ -37,8 +37,17 @@ javac -nowarn --release 8 -encoding UTF-8 \
 rm -rf "$OUT/aidl" && mkdir -p "$OUT/aidl" && (cd "$OUT/aidl" && unzip -q "../../$SHIZUKU_AIDL" 'moe/*')
 dalvik-exchange --dex --min-sdk-version=26 --output="$OUT/classes.dex" "$OUT/classes" "$OUT/aidl"
 
+# The engine's rumble helper. It uses no libraries, so plain clang builds it; the prebuilt copy
+# in jniLibs is used when clang isn't installed.
+JNI=$SRC/jniLibs/arm64-v8a/libpadbridge.so
+if command -v clang >/dev/null && command -v ld.lld >/dev/null; then
+    clang --target=aarch64-linux-android26 -fPIC -shared -nostdlib -O2 -fuse-ld=lld -fno-stack-protector \
+        -fno-builtin -Wl,-soname,libpadbridge.so -Wl,--hash-style=both -o "$JNI" "$SRC/native/padbridge.c"
+fi
+mkdir -p "$OUT/lib/arm64-v8a" && cp "$JNI" "$OUT/lib/arm64-v8a/"
+
 cp "$OUT/base.apk" "$OUT/unaligned.apk"
-(cd "$OUT" && zip -q unaligned.apk classes.dex)
+(cd "$OUT" && zip -q unaligned.apk classes.dex && zip -q -r unaligned.apk lib)
 zipalign -f -p 4 "$OUT/unaligned.apk" "$OUT/aligned.apk"
 
 if [ ! -f "$KEYSTORE" ]; then

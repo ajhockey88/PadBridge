@@ -1,25 +1,40 @@
 package com.padbridge;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * The player pads, made with Android's `uinput` shell tool: one tool process holds them all,
  * registered in player order so Player 1 always comes before Player 2. A pad exists while the
- * tool runs; stopping it unplugs them all.
+ * tool runs; stopping it unplugs them all. When a game rumbles a pad, the tool says so on its
+ * output, and the engine passes it on to that player's controllers.
  */
 final class VirtualPads {
+    interface Listener { void onRumble(int player, boolean on); }
+
+    /** The tool's rumble lines: {"reason":"vibrating","id":2,"status":1}, in any order. */
+    private static final Pattern ID = Pattern.compile("\"id\"\\s*:\\s*(\\d+)"),
+            STATUS = Pattern.compile("\"status\"\\s*:\\s*(-?\\d+)");
     private final File log;
+    private final Listener listener;
     private Process process;
     private OutputStream stdin;
     private final List<PlayerPad> pads = new ArrayList<>();
     private String style = Routing.STANDARD;
 
-    VirtualPads(File log) { this.log = log; }
+    VirtualPads(File log, Listener listener) {
+        this.log = log;
+        this.listener = listener;
+    }
 
     synchronized int count() { return pads.size(); }
 
@@ -37,9 +52,9 @@ final class VirtualPads {
         if (process == null) {
             ProcessBuilder pb = new ProcessBuilder("uinput", "-");
             pb.redirectErrorStream(true);
-            pb.redirectOutput(ProcessBuilder.Redirect.appendTo(log));
             process = pb.start();
             stdin = process.getOutputStream();
+            listen(process);
         }
         while (pads.size() < players) {
             PlayerPad pad = new PlayerPad(pads.size() + 1, style);
@@ -85,6 +100,31 @@ final class VirtualPads {
         process = null;
         stdin = null;
         pads.clear();
+    }
+
+    /** Reads the tool's output: rumble for the engine, everything else to the log. */
+    private void listen(final Process p) {
+        Thread t = new Thread(new Runnable() {
+            @Override public void run() {
+                try (BufferedReader r = new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8));
+                     FileOutputStream out = new FileOutputStream(log, true)) {
+                    String line;
+                    while ((line = r.readLine()) != null) {
+                        Matcher id = ID.matcher(line), status = STATUS.matcher(line);
+                        if (line.contains("\"vibrating\"") && id.find() && status.find()) {
+                            listener.onRumble(Integer.parseInt(id.group(1)), Integer.parseInt(status.group(1)) > 0);
+                        } else {
+                            out.write((line + "\n").getBytes(StandardCharsets.UTF_8));
+                            out.flush();
+                        }
+                    }
+                } catch (IOException | RuntimeException ignored) {
+                    // The tool stopped.
+                }
+            }
+        }, "PadBridge uinput output");
+        t.setDaemon(true);
+        t.start();
     }
 
     private boolean alive() {
