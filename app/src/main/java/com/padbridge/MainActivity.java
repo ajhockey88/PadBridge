@@ -726,15 +726,7 @@ public class MainActivity extends Activity implements ShizukuClient.Listener {
     /** Swaps Players 1 and 2: flips Thor first and Controller first, and any fixed players. */
     private void swapOneAndTwo() {
         Haptics.play(this, Haptics.SWAP);
-        String m = prefs.mode();
-        prefs.setMode(Routing.THOR_FIRST.equals(m) ? Routing.CONTROLLER_FIRST : Routing.THOR_FIRST);
-        for (EngineControl.Controller ctl : status.controllers) {
-            int pin = prefs.pin(ctl.key);
-            if (pin == 1) prefs.setPin(ctl.key, 2);
-            else if (pin == 2) prefs.setPin(ctl.key, 1);
-        }
-        Toast.makeText(this, "Player 1 is now " + (Routing.THOR_FIRST.equals(prefs.mode())
-                ? "the Thor's controls" : "your controller"), Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, HotkeyReceiver.swapOneAndTwo(this, status), Toast.LENGTH_SHORT).show();
     }
 
     /** A setting changed: tell the engine and redraw. */

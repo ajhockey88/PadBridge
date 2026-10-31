@@ -37,11 +37,17 @@ final class PhysicalPad {
     boolean warnedLow;
     /** The Thor's key codes already written to the log, to diagnose its buttons. */
     private final java.util.BitSet loggedKeys = new java.util.BitSet();
+    /** Hotkeys: buttons held back from the player pad until let go, and combos already run. */
+    long suppress;
+    int hotkeyLatch;
+    /** The last button pressed (a PadState button, for press-to-remap) and a count of presses. */
+    volatile int lastPressed = -1, pressSeq;
+    private long prevButtons;
     /** It turned down a rumble effect. */
     volatile boolean cantRumble;
     private boolean monotonic;
     private long lastReportUs;
-    private int fdNum = -1, effect = -1, effectStrength;
+    private int fdNum = -1, effect = -1, effectKey;
     private FileInputStream in;
     private Thread reader;
     private volatile boolean open;
@@ -84,6 +90,7 @@ final class PhysicalPad {
         final int size = Engine.EVENT_SIZE;
         reader = new Thread(new Runnable() {
             @Override public void run() {
+                urgent();
                 byte[] buf = new byte[size * 64];
                 int tail = size - 8; // type, code and value sit after the timestamp
                 try {
@@ -115,6 +122,7 @@ final class PhysicalPad {
                             }
                         }
                         if (frame) {
+                            notePress();
                             listener.onFrame(PhysicalPad.this);
                             measure(reportUs);
                         }
@@ -132,6 +140,42 @@ final class PhysicalPad {
         }, "PadBridge read " + dev.path);
         reader.start();
         return true;
+    }
+
+    /** Notes a newly pressed button (a trigger past halfway counts), for press-to-remap. */
+    private void notePress() {
+        PadState s = mapper.state;
+        long now = s.buttons;
+        if (s.axes[PadState.LT] > 0.5f) now |= 1L << PadState.L2;
+        if (s.axes[PadState.RT] > 0.5f) now |= 1L << PadState.R2;
+        long down = now & ~prevButtons & ((1L << PadState.BUTTONS) - 1);
+        prevButtons = now;
+        if (down != 0) {
+            lastPressed = Long.numberOfTrailingZeros(down);
+            pressSeq++;
+        }
+    }
+
+    private static volatile boolean priorityLogged;
+
+    /**
+     * Asks for the reading thread to run ahead of almost everything else, so it wakes the moment
+     * a report arrives. Raising priority needs rights the shell user may not have: then it stays
+     * at the normal priority, which works, just with more wake-up jitter when the Thor is busy.
+     */
+    static void urgent() {
+        int[] tries = {-19, -16, -10, -4};
+        for (int p : tries) {
+            try {
+                android.os.Process.setThreadPriority(p);
+                if (!priorityLogged) Engine.log("controller threads at priority " + p);
+                priorityLogged = true;
+                return;
+            } catch (Throwable ignored) {
+            }
+        }
+        if (!priorityLogged) Engine.log("controller threads at normal priority");
+        priorityLogged = true;
     }
 
     private static long timestampUs(byte[] b, int off, int size) {
@@ -160,25 +204,25 @@ final class PhysicalPad {
     private static float average(float avg, float v) { return avg == 0 ? v : avg * 0.9f + v * 0.1f; }
 
     /**
-     * Starts or stops rumble at this strength (1 to 100), on this controller's open node. False
-     * if it can't rumble. Effects last at most 5 seconds, in case a stop never comes.
+     * Starts or stops rumble at these magnitudes (0 to 0xffff), on this controller's open node.
+     * False if it can't rumble. Effects last at most `ms`, in case a stop never comes.
      */
-    synchronized boolean rumble(boolean on, int strength) {
+    synchronized boolean rumble(boolean on, int strong, int weak, int ms) {
         if (!open || fdNum < 0 || cantRumble) return false;
         if (!on) {
             if (effect >= 0) Native.rumblePlay(fdNum, effect, 0);
             return true;
         }
-        if (effect < 0 || strength != effectStrength) {
-            int magnitude = Math.round(0xffff * Math.min(100, strength) / 100f);
-            int id = Native.rumbleUpload(fdNum, effect, magnitude, magnitude, 5000);
+        int key = strong * 31 + weak * 7 + ms;
+        if (effect < 0 || key != effectKey) {
+            int id = Native.rumbleUpload(fdNum, effect, Math.min(0xffff, strong), Math.min(0xffff, weak), ms);
             if (id < 0) {
                 cantRumble = true;
                 effect = -1;
                 return false;
             }
             effect = id;
-            effectStrength = strength;
+            effectKey = key;
         }
         return Native.rumblePlay(fdNum, effect, 1) == 0;
     }

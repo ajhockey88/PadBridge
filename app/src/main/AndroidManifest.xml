@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.padbridge"
-    android:versionCode="8"
+    android:versionCode="9"
     android:versionName="1.0">
 
     <uses-sdk android:minSdkVersion="31" android:targetSdkVersion="33" />
@@ -9,6 +9,9 @@
     <!-- Lets Shizuku offer PadBridge its shell helper, which runs the engine. -->
     <uses-permission android:name="moe.shizuku.manager.permission.API_V23" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Back on by itself after a restart; a notice if Shizuku still needs starting. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Only for GitHub: PadBridge updates. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
@@ -16,6 +19,11 @@
     <!-- Setup checks for Shizuku and opens it (Android hides other apps without this). -->
     <queries>
         <package android:name="moe.shizuku.privileged.api" />
+        <!-- Settings > Games lists your games and emulators, to give them their own settings. -->
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
     </queries>
 
     <application
@@ -78,5 +86,24 @@
         <receiver
             android:name=".InstallReceiver"
             android:exported="false" />
+
+        <!-- Hotkeys from the engine; INJECT_EVENTS: only the shell user (and the system) can send it. -->
+        <receiver
+            android:name=".HotkeyReceiver"
+            android:exported="true"
+            android:permission="android.permission.INJECT_EVENTS">
+            <intent-filter>
+                <action android:name="com.padbridge.action.SWAP" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>

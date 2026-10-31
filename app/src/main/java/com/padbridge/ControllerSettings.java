@@ -25,8 +25,8 @@ import java.util.Locale;
 
 /**
  * One controller's own settings, from its menu on the main screen or Settings > Controllers:
- * rumble strength, stick deadzone, invert the right stick, Nintendo layout, and how quickly it
- * reports, live.
+ * rumble strength, stick deadzone, invert the right stick, Nintendo layout, its button map, and
+ * how quickly it reports, live.
  */
 final class ControllerSettings {
     private ControllerSettings() {}
@@ -120,9 +120,34 @@ final class ControllerSettings {
             }
         }));
 
+        box.addView(heading(a, "BUTTONS"));
+        LinearLayout map = new LinearLayout(a);
+        map.setGravity(Gravity.CENTER_VERTICAL);
+        final TextView mapSummary = Ui.plain(a, ButtonMap.summary(s), 15, Ui.TEXT);
+        map.addView(mapSummary, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        TextView remap = Ui.button(a, "🎛️  Remap");
+        remap.setTextSize(13);
+        final String title = name;
+        remap.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                Haptics.play(a, Haptics.PICK);
+                ButtonMap.show(a, title, s, new Runnable() {
+                    @Override public void run() {
+                        save.run();
+                        mapSummary.setText(ButtonMap.summary(s));
+                    }
+                }, key);
+            }
+        });
+        map.addView(remap);
+        box.addView(map);
+        box.addView(note(a, "Swap or turn off this controller's buttons, on its player pad only"));
+
+        android.widget.ScrollView scroll = new android.widget.ScrollView(a);
+        scroll.addView(box);
         new AlertDialog.Builder(a)
                 .setTitle(name)
-                .setView(box)
+                .setView(scroll)
                 .setPositiveButton("Done", null)
                 .setOnDismissListener(new DialogInterface.OnDismissListener() {
                     @Override public void onDismiss(DialogInterface dialog) { handler.removeCallbacks(tick); }
@@ -161,8 +186,10 @@ final class ControllerSettings {
         return ctl.battery >= 0 && !ctl.charging && ctl.battery <= Engine.BATTERY_LOW;
     }
 
-    private static String added(double ms) {
-        return ms < 0.1 ? "<0.1 ms" : String.format(Locale.US, "%.1f ms", ms);
+    /** PadBridge's own delay: to a hundredth of a millisecond while it's under one. */
+    static String added(double ms) {
+        if (ms < 0.01) return "<0.01 ms";
+        return String.format(Locale.US, ms < 1 ? "%.2f ms" : "%.1f ms", ms);
     }
 
     /**

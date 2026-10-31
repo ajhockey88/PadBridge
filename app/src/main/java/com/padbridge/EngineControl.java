@@ -38,11 +38,17 @@ final class EngineControl {
         /** Battery percent, or -1 when it doesn't report one. */
         int battery = -1;
         boolean charging;
+        /** The last button pressed on it (a PadState button, or -1), and a count of presses. */
+        int pressed = -1, pressSeq;
     }
 
     /** What the engine last reported. */
     static final class Status {
         boolean alive;
+        /** Player pads go straight to /dev/uinput, rather than through the slower uinput tool. */
+        boolean direct;
+        /** The game whose profile is on (its package), or "". */
+        String profile = "";
         int version, players;
         String style = Routing.STANDARD, error = "";
         final List<Controller> controllers = new ArrayList<>();
@@ -78,6 +84,8 @@ final class EngineControl {
             s.players = o.optInt("players");
             s.style = o.optString("style", Routing.STANDARD);
             s.error = o.optString("error", "");
+            s.direct = o.optBoolean("direct");
+            s.profile = o.optString("profile", "");
             long age = System.currentTimeMillis() - o.optLong("time");
             s.alive = o.optBoolean("running") && age < 4000 && age > -4000;
             JSONArray list = o.optJSONArray("controllers");
@@ -96,6 +104,8 @@ final class EngineControl {
                 c.cantRumble = d.optBoolean("cantRumble");
                 c.battery = d.optInt("battery", -1);
                 c.charging = d.optBoolean("charging");
+                c.pressed = d.optInt("pressed", -1);
+                c.pressSeq = d.optInt("pressSeq");
                 s.controllers.add(c);
             }
         } catch (JSONException ignored) {
@@ -131,16 +141,35 @@ final class EngineControl {
         lastStartAt = 0;
     }
 
+    /**
+     * Starts the engine under a small keep-alive shell: if the engine ever stops on its own
+     * (a crash, or Android stopping it), the shell starts it again within a couple of seconds.
+     * It gives up after five quick stops in a row, and stops for good when the engine exits
+     * cleanly (PadBridge turned off, or updated).
+     */
     private static void start(Context context) {
         pushConfig(context);
         String apk = context.getApplicationInfo().sourceDir;
         String dir = folder(context).getAbsolutePath();
         String lib = context.getApplicationInfo().nativeLibraryDir;
+        String loop = "f=0; while :; do s=$(date +%s); "
+                + "CLASSPATH=\"$1\" app_process /system/bin --nice-name=" + PROCESS + " " + Engine.class.getName()
+                + " \"$2\" \"$1\" \"$3\"; c=$?; "
+                + "[ $c -eq 0 ] && exit 0; [ -f \"$1\" ] || exit 0; "
+                + "if [ $(( $(date +%s) - s )) -lt 30 ]; then f=$((f+1)); else f=0; fi; "
+                + "[ $f -ge 5 ] && { echo \"$(date +%s)000 engine keeps stopping (exit $c), giving up\"; exit 1; }; "
+                + "echo \"$(date +%s)000 engine stopped (exit $c), starting it again\"; sleep 2; done";
         // setsid: the engine outlives this shell, Shizuku's process for it, and the app.
-        ShizukuClient.runShell("pkill -x " + PROCESS + "; cd /; CLASSPATH='" + apk + "' setsid app_process "
-                + "/system/bin --nice-name=" + PROCESS + " " + Engine.class.getName() + " '" + dir + "' '" + apk
-                + "' '" + lib + "' </dev/null >'" + dir + "/engine.log' 2>&1 &");
+        // The keep-alive's name is put together at run time so this command doesn't match itself.
+        ShizukuClient.runShell(STOP_ALL + "; pm grant " + context.getPackageName()
+                + " android.permission.POST_NOTIFICATIONS 2>/dev/null; cd /; n=" + KEEPALIVE_HEAD + "; "
+                + "setsid sh -c '" + loop + "' \"${n}" + KEEPALIVE_TAIL + "\" '" + apk + "' '" + dir + "' '" + lib
+                + "' </dev/null >'" + dir + "/engine.log' 2>&1 &");
     }
+
+    /** The keep-alive shell is named padbridge-keepalive; [a] stops pkill matching its own shell. */
+    private static final String KEEPALIVE_HEAD = "padbridge-keep", KEEPALIVE_TAIL = "alive",
+            STOP_ALL = "pkill -f 'padbridge-keep[a]live'; pkill -x " + PROCESS;
 
     /** Switches PadBridge off: the engine gives every controller back and removes the player pads. */
     static void stop(Context context) {
@@ -149,21 +178,37 @@ final class EngineControl {
         if (ShizukuClient.hasPermission()) {
             // The engine stops by itself on the new config; this is in case it's stuck.
             SystemClock.sleep(1500);
-            if (status(context).alive) ShizukuClient.runShell("pkill -x " + PROCESS);
+            ShizukuClient.runShell(status(context).alive ? STOP_ALL : "pkill -f 'padbridge-keep[a]live'");
         }
     }
 
-    /** Called when Shizuku hands PadBridge its binder: starts the engine once allowed. */
+    /**
+     * Called when Shizuku hands PadBridge its binder (Shizuku just started, often after a
+     * restart, or PadBridge's process did): starts the engine once allowed.
+     */
     static void autoStart(Context context) {
         final Context app = context.getApplicationContext();
         if (!new Prefs(app).autoStart()) return;
+        final Runnable go = new Runnable() {
+            @Override public void run() {
+                new Thread(new Runnable() {
+                    @Override public void run() {
+                        ensureRunning(app);
+                        // It's back: the "waiting for Shizuku" notice can go.
+                        BootReceiver.cancelNotice(app);
+                    }
+                }, "PadBridge auto start").start();
+            }
+        };
+        if (ShizukuClient.hasPermission()) {
+            go.run();
+            return;
+        }
         ShizukuClient.addListener(new ShizukuClient.Listener() {
             @Override public void onShizukuChanged() {
                 if (!ShizukuClient.hasPermission()) return;
                 ShizukuClient.removeListener(this);
-                new Thread(new Runnable() {
-                    @Override public void run() { ensureRunning(app); }
-                }, "PadBridge auto start").start();
+                go.run();
             }
         });
     }

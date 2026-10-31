@@ -9,6 +9,8 @@ final class PadState {
     // Button bits.
     static final int A = 0, B = 1, X = 2, Y = 3, L1 = 4, R1 = 5, L2 = 6, R2 = 7, SELECT = 8, START = 9,
             MODE = 10, L3 = 11, R3 = 12, UP = 13, DOWN = 14, LEFT = 15, RIGHT = 16;
+    /** The standard buttons, A to RIGHT, which a controller's button map can rearrange. */
+    static final int BUTTONS = 17;
     /** BUTTON_1 to BUTTON_16 (evdev 288 to 303) of controllers without a standard layout. */
     static final int EXTRA = 17, EXTRA_COUNT = 16;
 
