@@ -29,7 +29,7 @@ import org.json.JSONObject;
  */
 public final class Engine implements PhysicalPad.Listener, VirtualPads.Listener {
     /** Bumped when the engine changes; the app restarts an engine that doesn't match. */
-    static final int VERSION = 4;
+    static final int VERSION = 5;
     /** struct input_event: 24 bytes with 64-bit timestamps, 16 with 32-bit ones. */
     static final int EVENT_SIZE = System.getProperty("os.arch", "").contains("64") ? 24 : 16;
     private static final int BITS_PER_WORD = EVENT_SIZE == 24 ? 64 : 32;
@@ -37,7 +37,7 @@ public final class Engine implements PhysicalPad.Listener, VirtualPads.Listener 
     private final File dir, config, status, apk;
     private final VirtualPads players;
     private Routing.Config cfg = new Routing.Config();
-    private long configStamp = -1;
+    private String configText = "";
     /** Fewer players were asked for: remove the spare player pads on the next route. */
     private boolean fewerPlayers;
     /** Controllers by node, in the order they connected. */
@@ -156,13 +156,14 @@ public final class Engine implements PhysicalPad.Listener, VirtualPads.Listener 
         System.exit(0);
     }
 
-    /** True when config.json changed. */
+    /**
+     * True when config.json changed. Compared by content: the shared storage it lives on can
+     * keep whole-second times, so two changes in one second (− tapped twice) look like one.
+     */
     private boolean loadConfig() {
-        long stamp = config.lastModified();
-        if (stamp == configStamp) return false;
-        configStamp = stamp;
         String text = read(config);
-        if (text == null) return false;
+        if (text == null || text.equals(configText)) return false;
+        configText = text;
         Routing.Config next = Routing.Config.fromJson(text);
         synchronized (this) {
             if (next.keepPlayers < cfg.keepPlayers) fewerPlayers = true;
