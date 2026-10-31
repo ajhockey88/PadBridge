@@ -38,6 +38,8 @@ final class EngineControl {
         /** Battery percent, or -1 when it doesn't report one. */
         int battery = -1;
         boolean charging;
+        /** The last button pressed on it (a PadState button, or -1), and a count of presses. */
+        int pressed = -1, pressSeq;
     }
 
     /** What the engine last reported. */
@@ -45,6 +47,8 @@ final class EngineControl {
         boolean alive;
         /** Player pads go straight to /dev/uinput, rather than through the slower uinput tool. */
         boolean direct;
+        /** The game whose profile is on (its package), or "". */
+        String profile = "";
         int version, players;
         String style = Routing.STANDARD, error = "";
         final List<Controller> controllers = new ArrayList<>();
@@ -81,6 +85,7 @@ final class EngineControl {
             s.style = o.optString("style", Routing.STANDARD);
             s.error = o.optString("error", "");
             s.direct = o.optBoolean("direct");
+            s.profile = o.optString("profile", "");
             long age = System.currentTimeMillis() - o.optLong("time");
             s.alive = o.optBoolean("running") && age < 4000 && age > -4000;
             JSONArray list = o.optJSONArray("controllers");
@@ -99,6 +104,8 @@ final class EngineControl {
                 c.cantRumble = d.optBoolean("cantRumble");
                 c.battery = d.optInt("battery", -1);
                 c.charging = d.optBoolean("charging");
+                c.pressed = d.optInt("pressed", -1);
+                c.pressSeq = d.optInt("pressSeq");
                 s.controllers.add(c);
             }
         } catch (JSONException ignored) {

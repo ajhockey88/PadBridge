@@ -100,6 +100,50 @@ final class Routing {
         }
     }
 
+    /**
+     * A game's (or emulator's) own settings, which switch on by themselves while it's in front:
+     * who is Player 1, and a button map for every controller, on top of each one's own.
+     */
+    static final class Profile {
+        String label = "";
+        /** A mode, or "" to keep the usual one. */
+        String mode = "";
+        /** As PadSettings.map; null when buttons stay as they are. */
+        final PadSettings buttons = new PadSettings();
+
+        JSONObject toJson() throws JSONException {
+            JSONObject o = new JSONObject().put("label", label).put("mode", mode);
+            JSONObject b = buttons.toJson().optJSONObject("map");
+            if (b != null) o.put("map", b);
+            return o;
+        }
+
+        static Profile fromJson(JSONObject o) {
+            Profile p = new Profile();
+            if (o == null) return p;
+            p.label = o.optString("label", "");
+            String m = o.optString("mode", "");
+            p.mode = THOR_FIRST.equals(m) || CONTROLLER_FIRST.equals(m) || SHARED.equals(m) ? m : "";
+            try {
+                p.buttons.map = PadSettings.fromJson(new JSONObject().putOpt("map", o.optJSONObject("map"))).map;
+            } catch (JSONException ignored) {
+            }
+            return p;
+        }
+    }
+
+    /**
+     * Two button maps one after the other: `first` (a controller's own), then `then` (a game's).
+     * Null when both are.
+     */
+    static int[] compose(int[] first, int[] then) {
+        if (first == null) return then == null ? null : then.clone();
+        if (then == null) return first.clone();
+        int[] out = new int[first.length];
+        for (int i = 0; i < out.length; i++) out[i] = first[i] < 0 ? PadSettings.UNMAPPED : then[first[i]];
+        return out;
+    }
+
     /** The settings the app hands the engine (config.json). */
     static final class Config {
         boolean enabled = true;
@@ -114,6 +158,10 @@ final class Routing {
         String builtin = "";
         /** Controllers' own settings, for those that changed any. */
         final Map<String, PadSettings> pads = new HashMap<>();
+        /** Games' own settings, by package name. */
+        final Map<String, Profile> profiles = new HashMap<>();
+        /** Hotkeys: action (Hotkeys.ACTIONS) to combo id, for those switched on. */
+        final Map<String, String> hotkeys = new HashMap<>();
 
         PadSettings pad(String key) {
             PadSettings s = pads.get(key);
@@ -136,6 +184,12 @@ final class Routing {
             JSONObject ps = new JSONObject();
             for (Map.Entry<String, PadSettings> e : pads.entrySet()) ps.put(e.getKey(), e.getValue().toJson());
             o.put("pads", ps);
+            JSONObject pr = new JSONObject();
+            for (Map.Entry<String, Profile> e : profiles.entrySet()) pr.put(e.getKey(), e.getValue().toJson());
+            o.put("profiles", pr);
+            JSONObject hk = new JSONObject();
+            for (Map.Entry<String, String> e : hotkeys.entrySet()) hk.put(e.getKey(), e.getValue());
+            o.put("hotkeys", hk);
             return o;
         }
 
@@ -163,6 +217,18 @@ final class Routing {
                 for (int i = 0; keys != null && i < keys.length(); i++) {
                     String k = keys.getString(i);
                     c.pads.put(k, PadSettings.fromJson(ps.optJSONObject(k)));
+                }
+                JSONObject pr = o.optJSONObject("profiles");
+                JSONArray games = pr != null ? pr.names() : null;
+                for (int i = 0; games != null && i < games.length(); i++) {
+                    String k = games.getString(i);
+                    c.profiles.put(k, Profile.fromJson(pr.optJSONObject(k)));
+                }
+                JSONObject hk = o.optJSONObject("hotkeys");
+                JSONArray actions = hk != null ? hk.names() : null;
+                for (int i = 0; actions != null && i < actions.length(); i++) {
+                    String k = actions.getString(i);
+                    if (Hotkeys.mask(hk.optString(k)) != 0) c.hotkeys.put(k, hk.optString(k));
                 }
             } catch (JSONException ignored) {
             }

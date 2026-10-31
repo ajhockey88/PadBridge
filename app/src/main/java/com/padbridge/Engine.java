@@ -29,15 +29,21 @@ import org.json.JSONObject;
  */
 public final class Engine implements PhysicalPad.Listener, VirtualPads.Listener {
     /** Bumped when the engine changes; the app restarts an engine that doesn't match. */
-    static final int VERSION = 10;
+    static final int VERSION = 11;
     /** struct input_event: 24 bytes with 64-bit timestamps, 16 with 32-bit ones. */
     static final int EVENT_SIZE = System.getProperty("os.arch", "").contains("64") ? 24 : 16;
     private static final int BITS_PER_WORD = EVENT_SIZE == 24 ? 64 : 32;
 
     private final File dir, config, status, apk;
     private final VirtualPads players;
+    /** The settings in effect: config.json, with the profile of the game in front (if any) on top. */
     private Routing.Config cfg = new Routing.Config();
     private String configText = "";
+    /** The game whose profile is on (its package), or "". */
+    private String profile = "";
+    /** Each hotkey action's buttons (Hotkeys.ACTIONS order), 0 when off. */
+    private long[] hotkeyMasks = new long[Hotkeys.ACTIONS.length];
+    private boolean anyHotkey;
     /** Fewer players were asked for: remove the spare player pads on the next route. */
     private boolean fewerPlayers;
     /** Controllers by node, in the order they connected. */
@@ -138,6 +144,8 @@ public final class Engine implements PhysicalPad.Listener, VirtualPads.Listener 
                     log("scan failed: " + e);
                 }
             }
+            // The game in front: every half second (every 2 s the slow way).
+            if (Foreground.quick() || tick % 4 == 0) checkForeground();
             if (tick % 20 == 0) readBatteries();
             writeStatus(false);
             tick++;
@@ -184,6 +192,50 @@ public final class Engine implements PhysicalPad.Listener, VirtualPads.Listener 
         System.exit(0);
     }
 
+    /** Switches a game's profile on or off as it comes to the front or leaves. */
+    private void checkForeground() {
+        String pkg = "";
+        if (!cfg.profiles.isEmpty()) pkg = Foreground.pick(Foreground.visible(), cfg.profiles.keySet());
+        if (pkg.equals(profile)) return;
+        profile = pkg;
+        Routing.Profile p = cfg.profiles.get(pkg);
+        log(pkg.isEmpty() ? "no game profile" : "game profile: " + (p.label.isEmpty() ? pkg : p.label));
+        applyConfig(Routing.Config.fromJson(configText));
+        try {
+            route(); // a different Player 1 at once
+        } catch (Exception e) {
+            log("route failed: " + e);
+        }
+    }
+
+    /** Takes these settings, with the current game's profile on top. */
+    private synchronized void applyConfig(Routing.Config next) {
+        Routing.Profile p = next.profiles.get(profile);
+        if (p != null && !p.mode.isEmpty()) next.mode = p.mode;
+        if (next.keepPlayers < cfg.keepPlayers) fewerPlayers = true;
+        cfg = next;
+        for (PhysicalPad pad : pads.values()) pad.mapper.apply(cfg.nintendo.contains(pad.dev.key()), settings(pad.dev.key()));
+        anyHotkey = false;
+        for (int i = 0; i < Hotkeys.ACTIONS.length; i++) {
+            String combo = cfg.hotkeys.get(Hotkeys.ACTIONS[i]);
+            hotkeyMasks[i] = combo == null ? 0 : Hotkeys.mask(combo);
+            anyHotkey |= hotkeyMasks[i] != 0;
+        }
+    }
+
+    /** A controller's settings, with the game profile's button map after its own. */
+    private Routing.PadSettings settings(String key) {
+        Routing.PadSettings own = cfg.pad(key);
+        Routing.Profile p = cfg.profiles.get(profile);
+        if (p == null || p.buttons.map == null) return own;
+        Routing.PadSettings s = new Routing.PadSettings();
+        s.rumble = own.rumble;
+        s.deadzone = own.deadzone;
+        s.invertRy = own.invertRy;
+        s.map = Routing.compose(own.map, p.buttons.map);
+        return s;
+    }
+
     /**
      * True when config.json changed. Compared by content: the shared storage it lives on can
      * keep whole-second times, so two changes in one second (− tapped twice) look like one.
@@ -192,12 +244,7 @@ public final class Engine implements PhysicalPad.Listener, VirtualPads.Listener 
         String text = read(config);
         if (text == null || text.equals(configText)) return false;
         configText = text;
-        Routing.Config next = Routing.Config.fromJson(text);
-        synchronized (this) {
-            if (next.keepPlayers < cfg.keepPlayers) fewerPlayers = true;
-            cfg = next;
-            for (PhysicalPad p : pads.values()) p.mapper.apply(cfg.nintendo.contains(p.dev.key()), cfg.pad(p.dev.key()));
-        }
+        applyConfig(Routing.Config.fromJson(text));
         log("config: " + text.replace('\n', ' '));
         return true;
     }
@@ -218,8 +265,8 @@ public final class Engine implements PhysicalPad.Listener, VirtualPads.Listener 
             if (ranges == null) continue; // not readable yet; try again next scan
             InputScan.applyRanges(d, ranges);
             PhysicalPad p = new PhysicalPad(d, now);
-            p.mapper.apply(cfg.nintendo.contains(d.key()), cfg.pad(d.key()));
             synchronized (this) {
+                p.mapper.apply(cfg.nintendo.contains(d.key()), settings(d.key()));
                 pads.put(id, p);
             }
             log("controller connected: " + d.name + " " + d.key() + " " + d.path);
@@ -294,7 +341,39 @@ public final class Engine implements PhysicalPad.Listener, VirtualPads.Listener 
 
     @Override
     public void onFrame(PhysicalPad pad) {
+        if (anyHotkey) hotkeys(pad);
         refresh(pad.player);
+    }
+
+    private final java.util.concurrent.ExecutorService actions = java.util.concurrent.Executors.newSingleThreadExecutor();
+
+    /**
+     * Runs a hotkey when its buttons are all held on this controller, once per press. Its
+     * buttons are then held back from the player pad until let go, so the game doesn't get them.
+     */
+    private synchronized void hotkeys(PhysicalPad p) {
+        p.mapper.normalizedInto(scratch);
+        long held = scratch.buttons;
+        p.suppress &= held;
+        for (int i = 0; i < hotkeyMasks.length; i++) {
+            long m = hotkeyMasks[i];
+            if (m == 0) continue;
+            boolean all = (held & m) == m, latched = (p.hotkeyLatch & (1 << i)) != 0;
+            if (all && !latched) {
+                p.hotkeyLatch |= 1 << i;
+                p.suppress |= m;
+                final String action = Hotkeys.ACTIONS[i];
+                log("hotkey: " + action);
+                actions.execute(new Runnable() {
+                    @Override public void run() {
+                        String[] cmd = Hotkeys.command(action);
+                        if (cmd != null) exec(cmd);
+                    }
+                });
+            } else if (!all) {
+                p.hotkeyLatch &= ~(1 << i);
+            }
+        }
     }
 
     @Override
@@ -340,6 +419,7 @@ public final class Engine implements PhysicalPad.Listener, VirtualPads.Listener 
         for (PhysicalPad p : pads.values()) {
             if (p.player != player || !p.isOpen()) continue;
             p.mapper.normalizedInto(scratch);
+            if (p.suppress != 0) scratch.buttons &= ~p.suppress;
             merged.merge(scratch);
         }
         players.send(player, merged);
@@ -353,6 +433,7 @@ public final class Engine implements PhysicalPad.Listener, VirtualPads.Listener 
             o.put("players", players.count());
             o.put("style", players.style());
             o.put("direct", players.direct());
+            o.put("profile", profile);
             o.put("error", error);
             JSONArray list = new JSONArray();
             synchronized (this) {
@@ -368,6 +449,8 @@ public final class Engine implements PhysicalPad.Listener, VirtualPads.Listener 
                     d.put("intervalMs", Math.round(p.intervalMs * 10) / 10.0);
                     d.put("addedMs", Math.round(p.addedMs * 1000) / 1000.0);
                     d.put("cantRumble", p.cantRumble && !p.builtin);
+                    d.put("pressed", p.lastPressed);
+                    d.put("pressSeq", p.pressSeq);
                     Battery b = p.battery;
                     if (b != null) {
                         d.put("battery", b.percent);
@@ -414,7 +497,7 @@ public final class Engine implements PhysicalPad.Listener, VirtualPads.Listener 
     }
 
     /** Runs a command and returns what it printed, or null if it failed. */
-    private static String exec(String... cmd) {
+    static String exec(String... cmd) {
         try {
             Process p = new ProcessBuilder(cmd).redirectErrorStream(true).start();
             StringBuilder sb = new StringBuilder();

@@ -18,6 +18,8 @@ public class EngineTest {
         routesPlayers();
         controllerSettings();
         buttonMaps();
+        gameProfiles();
+        hotkeyCombos();
         playerPadsReportChanges();
         thorSystemKeys();
         readsBatteries();
@@ -292,6 +294,56 @@ public class EngineTest {
         plain.handle(Evdev.EV_ABS, Evdev.ABS_BRAKE, brake[0] + (brake[1] - brake[0]) / 4);
         plain.normalizedInto(out);
         check("no map: trigger stays put", near(out.axes[PadState.LT], 0.25f));
+    }
+
+    static void gameProfiles() throws Exception {
+        Routing.Config c = new Routing.Config();
+        Routing.Profile p = new Routing.Profile();
+        p.label = "RetroArch";
+        p.mode = Routing.CONTROLLER_FIRST;
+        p.buttons.setMapped(PadState.A, PadState.B);
+        c.profiles.put("com.retroarch", p);
+        c.profiles.put("org.ppsspp.ppsspp", new Routing.Profile());
+        Routing.Config back = Routing.Config.fromJson(c.toJson().toString());
+        Routing.Profile got = back.profiles.get("com.retroarch");
+        check("profile survives JSON", got != null && "RetroArch".equals(got.label)
+                && Routing.CONTROLLER_FIRST.equals(got.mode) && got.buttons.mapped(PadState.A) == PadState.B);
+        check("empty profile keeps everything", back.profiles.get("org.ppsspp.ppsspp").mode.isEmpty()
+                && back.profiles.get("org.ppsspp.ppsspp").buttons.map == null);
+
+        int[] own = Routing.PadSettings.identity(), game = Routing.PadSettings.identity();
+        own[PadState.A] = PadState.X; // this controller: A presses X
+        own[PadState.SELECT] = Routing.PadSettings.UNMAPPED;
+        game[PadState.X] = PadState.Y; // this game: X presses Y
+        int[] both = Routing.compose(own, game);
+        check("maps compose: A -> X -> Y", both[PadState.A] == PadState.Y);
+        check("maps compose: off stays off", both[PadState.SELECT] == Routing.PadSettings.UNMAPPED);
+        check("maps compose: the game's own X -> Y", both[PadState.X] == PadState.Y);
+        check("no maps, no map", Routing.compose(null, null) == null);
+
+        String dumpsys = "  Display #0 (activities from top to bottom):\n"
+                + "    topResumedActivity=ActivityRecord{1a2b u0 com.retroarch/.browser.retroactivity.RetroActivityFuture t41}\n"
+                + "  Display #4\n"
+                + "    ResumedActivity: ActivityRecord{3c4d u0 com.padbridge/.MainActivity t42}\n";
+        List<String> vis = Foreground.fromDumpsys(dumpsys);
+        check("dumpsys: both screens' apps", vis.size() == 2 && vis.get(0).equals("com.retroarch"));
+        check("the game in front wins, not PadBridge",
+                Foreground.pick(Arrays.asList("com.padbridge", "com.retroarch"), back.profiles.keySet()).equals("com.retroarch"));
+        check("no profile, nothing on", Foreground.pick(Arrays.asList("com.android.launcher3"), back.profiles.keySet()).isEmpty());
+    }
+
+    static void hotkeyCombos() throws Exception {
+        check("Select + Start", Hotkeys.mask("select_start") == ((1L << PadState.SELECT) | (1L << PadState.START)));
+        check("unknown combo is off", Hotkeys.mask("nope") == 0);
+        for (String a : Hotkeys.ACTIONS) check("every action has a command: " + a, Hotkeys.command(a) != null);
+        check("names line up", Hotkeys.COMBO_IDS.length == Hotkeys.COMBO_NAMES.length
+                && Hotkeys.ACTIONS.length == Hotkeys.ACTION_NAMES.length);
+        Routing.Config c = new Routing.Config();
+        c.hotkeys.put(Hotkeys.HOME, "select_start");
+        c.hotkeys.put(Hotkeys.BACK, "made_up");
+        Routing.Config back = Routing.Config.fromJson(c.toJson().toString());
+        check("hotkeys survive JSON, unknown ones dropped", "select_start".equals(back.hotkeys.get(Hotkeys.HOME))
+                && !back.hotkeys.containsKey(Hotkeys.BACK));
     }
 
     static void playerPadsReportChanges() throws Exception {

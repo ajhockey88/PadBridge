@@ -1,8 +1,10 @@
-⚡ PadBridge 1.1: faster than ever, your own button layout for each controller, and back on by itself after a restart.
+⚡ PadBridge 1.1: faster than ever, your own buttons for each controller and each game, hotkeys, and back on by itself after a restart.
 
 ## ✨ What's new in 1.1
 - ⚡ **Faster:** player pads are now made straight on the Thor's input system, so a press goes from your controller to its player pad in one step, with no helper app, pipe or text in between. The speed readout now times that whole trip, to a hundredth of a millisecond
-- 🎛️ **Button mapping per controller:** swap any buttons, or turn one off, for one controller only (an analog trigger moves with its button). Open a controller's settings and tap **Remap**
+- 🎛️ **Button mapping per controller:** swap any buttons, or turn one off, for one controller only (an analog trigger moves with its button). Open a controller's settings, tap **Remap** and just press the button you want to change
+- 🎯 **Game profiles:** give a game or emulator its own Player 1 and button map in Settings > **Games**. They switch on by themselves while it's in front, and off when you leave it
+- ⌨️ **Hotkeys:** Home, Back, swap Players 1 and 2, or open PadBridge with a button combo like Select + Start, from any controller, in Settings > **Hotkeys**
 - 🔁 **Starts by itself:** after a restart PadBridge comes back as soon as Shizuku is running, and if its engine ever stops, it starts again within seconds. Until Shizuku is running, a notice reminds you and opens Shizuku
 - 📳 **Truer rumble:** games' light and strong rumble now come through as the game asked, scaled by each controller's rumble strength
 
@@ -16,6 +18,8 @@ PadBridge bridges the Thor's controls and your controllers onto steady player co
 - 🔁 **Swap:** flip Player 1 and 2 in one tap, or tap any two players to swap them
 - 📌 **Fixed players:** pin a controller to a player, or leave it to Android
 - 🎛️ **Per-controller settings:** button mapping, rumble strength, stick deadzone, invert right stick and Nintendo layout
+- 🎯 **Game profiles:** each game's own Player 1 and buttons, on by themselves while it's in front
+- ⌨️ **Hotkeys:** button combos for Home, Back, swapping players and opening PadBridge
 - 📳 **Rumble:** games' rumble reaches your controllers, and the Thor's motor for its own controls
 - 🔋 **Battery:** each controller's battery on its card, with a notice when one runs low
 - ⚡ **Speed readout:** how often each controller reports, and how little PadBridge adds
@@ -25,7 +29,7 @@ PadBridge bridges the Thor's controls and your controllers onto steady player co
 - 🔄 **Updates:** check, see what's new, and install from Settings, or reinstall the current release
 
 ## 📜 Release history
-- **1.1:** faster input, button mapping per controller, starts by itself after a restart
+- **1.1:** faster input, button mapping per controller and per game, hotkeys, starts by itself after a restart
 - **1.0:** first release: the Thor's controls and your controllers as fixed players, up to 8, with rumble, per-controller settings and battery
 
 ## 📲 Install

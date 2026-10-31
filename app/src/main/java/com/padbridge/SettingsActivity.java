@@ -42,7 +42,7 @@ public class SettingsActivity extends Activity {
     private float d;
 
     // Tabs down the left; the chosen section's settings on the right, as cards.
-    private static final String[] TABS = {"🎮 Players", "🕹️ Controllers", "🖥️ Screens", "📳 Haptics", "🔄 Updates", "ℹ️ About"};
+    private static final String[] TABS = {"🎮 Players", "🕹️ Controllers", "🎯 Games", "⌨️ Hotkeys", "🖥️ Screens", "📳 Haptics", "🔄 Updates", "ℹ️ About"};
     private static final int BG = Ui.BG, SIDE = Ui.SIDE, CARD = Ui.CARD, ACCENT = Ui.ACCENT, SUB = Ui.SUB;
     /** The tab on show, kept when Settings rebuilds itself. */
     private static int tab;
@@ -167,17 +167,25 @@ public class SettingsActivity extends Activity {
                 controllersSection();
                 break;
             case 2:
+                header("Games", "Settings that switch on by themselves while a game or emulator is in front");
+                gamesSection();
+                break;
+            case 3:
+                header("Hotkeys", "Button combos that work on any controller, mid-game");
+                hotkeysSection();
+                break;
+            case 4:
                 header("Screens", "Where PadBridge and the controller test open");
                 toggle("Test on the other screen", "The controller test opens on the top screen. Off: on the same screen",
                         Prefs.KEY_BOTH_SCREENS, prefs.bothScreens(), false);
                 toggle("Swap screens", "PadBridge on the top screen and the test on the bottom. Reopen PadBridge "
                         + "after changing", Prefs.KEY_SWAP_SCREENS, prefs.swapScreens(), false);
                 break;
-            case 3:
+            case 5:
                 header("Haptics", "Pick a feel and strength for each action.");
                 hapticsSection();
                 break;
-            case 4:
+            case 6:
                 header("Updates", "Get the newest PadBridge from GitHub");
                 updateSection();
                 break;
@@ -496,6 +504,185 @@ public class SettingsActivity extends Activity {
         thanks.setLineSpacing(0, 1.15f);
         thanks.setPadding(0, (int) (4 * d), 0, 0);
         c.addView(thanks);
+    }
+
+    // ---- Games ------------------------------------------------------------------------------------
+
+    private void gamesSection() {
+        final java.util.LinkedHashMap<String, Routing.Profile> all = prefs.profiles();
+        String active = EngineControl.status(this).profile;
+        if (all.isEmpty()) {
+            LinearLayout c = card();
+            c.addView(plain("🎯  No games yet", 15, Color.WHITE));
+            TextView t = plain("Add a game or emulator to give it its own Player 1 and button map. They switch on "
+                    + "while it's in front, and off when you leave it", 12, SUB);
+            t.setPadding(0, (int) (4 * d), 0, 0);
+            c.addView(t);
+        }
+        for (final java.util.Map.Entry<String, Routing.Profile> e : all.entrySet()) {
+            final String pkg = e.getKey();
+            final Routing.Profile p = e.getValue();
+            LinearLayout c = card();
+            LinearLayout top = new LinearLayout(this);
+            top.setGravity(Gravity.CENTER_VERTICAL);
+            LinearLayout words = new LinearLayout(this);
+            words.setOrientation(LinearLayout.VERTICAL);
+            words.addView(plain(p.label.isEmpty() ? pkg : p.label, 16, Color.WHITE));
+            words.addView(plain(pkg.equals(active) ? "✅ On now: it's in front" : pkg, 12, pkg.equals(active) ? Ui.GREEN : SUB));
+            top.addView(words, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+            TextView remove = Ui.button(this, "Remove");
+            remove.setTextSize(13);
+            remove.setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View v) {
+                    Haptics.play(SettingsActivity.this, Haptics.PICK);
+                    prefs.setProfile(pkg, null);
+                    changed();
+                    showTab(2);
+                }
+            });
+            top.addView(remove);
+            c.addView(top);
+
+            TextView who = plain("WHO IS PLAYER 1", 11, Ui.DIM);
+            who.setLetterSpacing(0.1f);
+            who.setPadding(0, (int) (10 * d), 0, (int) (4 * d));
+            c.addView(who);
+            LinearLayout seg = new LinearLayout(this);
+            String[][] modes = {{"", "As usual"}, {Routing.THOR_FIRST, "📱 Thor"}, {Routing.CONTROLLER_FIRST, "🎮 Controller"},
+                    {Routing.SHARED, "🤝 Both"}};
+            for (final String[] m : modes) {
+                boolean sel = m[0].equals(p.mode);
+                TextView t = plain(m[1], 14, sel ? Color.WHITE : SUB);
+                t.setFocusable(true);
+                t.setSingleLine(true);
+                t.setPadding((int) (12 * d), (int) (6 * d), (int) (12 * d), (int) (6 * d));
+                t.setBackground(Ui.round(sel ? Ui.SELECTED : Ui.BUTTON, 15 * d));
+                t.setOnClickListener(new View.OnClickListener() {
+                    @Override public void onClick(View v) {
+                        Haptics.play(SettingsActivity.this, Haptics.PICK);
+                        p.mode = m[0];
+                        prefs.setProfile(pkg, p);
+                        changed();
+                        showTab(2);
+                    }
+                });
+                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT);
+                lp.rightMargin = (int) (6 * d);
+                seg.addView(t, lp);
+            }
+            c.addView(seg);
+
+            LinearLayout map = new LinearLayout(this);
+            map.setGravity(Gravity.CENTER_VERTICAL);
+            map.setPadding(0, (int) (10 * d), 0, 0);
+            final TextView summary = plain("🎛️  " + ButtonMap.summary(p.buttons) + ", on every controller", 14, Ui.TEXT);
+            map.addView(summary, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+            TextView remap = Ui.button(this, "Remap");
+            remap.setTextSize(13);
+            remap.setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View v) {
+                    Haptics.play(SettingsActivity.this, Haptics.PICK);
+                    ButtonMap.show(SettingsActivity.this, p.label.isEmpty() ? pkg : p.label, p.buttons, new Runnable() {
+                        @Override public void run() {
+                            prefs.setProfile(pkg, p);
+                            changed();
+                            summary.setText("🎛️  " + ButtonMap.summary(p.buttons) + ", on every controller");
+                        }
+                    }, null);
+                }
+            });
+            map.addView(remap);
+            c.addView(map);
+        }
+        TextView add = Ui.button(this, "＋  Add a game or emulator");
+        add.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                Haptics.play(SettingsActivity.this, Haptics.PICK);
+                pickGame(all.keySet());
+            }
+        });
+        LinearLayout.LayoutParams alp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT);
+        alp.topMargin = (int) (6 * d);
+        page.addView(add, alp);
+        TextView note = plain("A game's button map comes after each controller's own. With PadBridge on the bottom "
+                + "screen, the game on the top screen still counts as in front", 12, Ui.DIM);
+        note.setPadding(0, (int) (10 * d), 0, 0);
+        page.addView(note);
+    }
+
+    /** Lists installed apps (not already added) to give one a profile. */
+    private void pickGame(java.util.Set<String> have) {
+        android.content.Intent main = new android.content.Intent(android.content.Intent.ACTION_MAIN)
+                .addCategory(android.content.Intent.CATEGORY_LAUNCHER);
+        final List<String[]> apps = new ArrayList<>();
+        for (android.content.pm.ResolveInfo r : getPackageManager().queryIntentActivities(main, 0)) {
+            String pkg = r.activityInfo.packageName;
+            if (pkg.equals(getPackageName()) || have.contains(pkg)) continue;
+            boolean dup = false;
+            for (String[] a : apps) dup |= a[0].equals(pkg);
+            if (!dup) apps.add(new String[] {pkg, String.valueOf(r.loadLabel(getPackageManager()))});
+        }
+        java.util.Collections.sort(apps, new java.util.Comparator<String[]>() {
+            @Override public int compare(String[] a, String[] b) { return a[1].compareToIgnoreCase(b[1]); }
+        });
+        String[] names = new String[apps.size()];
+        for (int i = 0; i < names.length; i++) names[i] = apps.get(i)[1];
+        new AlertDialog.Builder(this)
+                .setTitle("🎯  Add a game or emulator")
+                .setItems(names, new DialogInterface.OnClickListener() {
+                    @Override public void onClick(DialogInterface dialog, int which) {
+                        Routing.Profile p = new Routing.Profile();
+                        p.label = apps.get(which)[1];
+                        prefs.setProfile(apps.get(which)[0], p);
+                        changed();
+                        showTab(2);
+                    }
+                })
+                .show();
+    }
+
+    // ---- Hotkeys ----------------------------------------------------------------------------------
+
+    private void hotkeysSection() {
+        for (int i = 0; i < Hotkeys.ACTIONS.length; i++) {
+            final String action = Hotkeys.ACTIONS[i];
+            final String name = Hotkeys.ACTION_NAMES[i];
+            LinearLayout c = card();
+            c.setFocusable(true);
+            LinearLayout row = new LinearLayout(this);
+            row.setGravity(Gravity.CENTER_VERTICAL);
+            row.addView(plain(name, 16, Color.WHITE), new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+            String combo = prefs.hotkey(action);
+            TextView value = chip(Hotkeys.comboName(combo));
+            if (combo.isEmpty()) value.setTextColor(SUB);
+            row.addView(value);
+            c.addView(row);
+            c.setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View v) {
+                    Haptics.play(SettingsActivity.this, Haptics.PICK);
+                    final String[] items = new String[Hotkeys.COMBO_IDS.length + 1];
+                    items[0] = "Off";
+                    System.arraycopy(Hotkeys.COMBO_NAMES, 0, items, 1, Hotkeys.COMBO_NAMES.length);
+                    new AlertDialog.Builder(SettingsActivity.this)
+                            .setTitle(name)
+                            .setItems(items, new DialogInterface.OnClickListener() {
+                                @Override public void onClick(DialogInterface dialog, int which) {
+                                    prefs.setHotkey(action, which == 0 ? "" : Hotkeys.COMBO_IDS[which - 1]);
+                                    changed();
+                                    showTab(3);
+                                }
+                            })
+                            .show();
+                }
+            });
+        }
+        TextView note = plain("Hold the buttons together on any controller. Its buttons don't reach the game while "
+                + "held. Guide is the Xbox, PlayStation or Home button on a controller. Off by default, so games keep "
+                + "every combo", 12, Ui.DIM);
+        note.setPadding(0, (int) (10 * d), 0, 0);
+        page.addView(note);
     }
 
     /** What a restart needs: Shizuku itself has to start again before PadBridge can. */

@@ -20,7 +20,7 @@ final class Prefs {
     static final String KEY_BOTH_SCREENS = "both_screens";
     static final String KEY_SWAP_SCREENS = "swap_screens";
     private static final String KEY_PINS = "pins", KEY_NINTENDO = "nintendo", KEY_BUILTIN = "builtin",
-            KEY_KNOWN = "known", KEY_PADS = "pads";
+            KEY_KNOWN = "known", KEY_PADS = "pads", KEY_PROFILES = "profiles", KEY_HOTKEYS = "hotkeys";
 
     private final SharedPreferences sp;
 
@@ -84,6 +84,43 @@ final class Prefs {
         sp.edit().putString(KEY_PADS, all.toString()).apply();
     }
 
+    /** Games' own settings, by package name, in the order they were added. */
+    java.util.LinkedHashMap<String, Routing.Profile> profiles() {
+        java.util.LinkedHashMap<String, Routing.Profile> out = new java.util.LinkedHashMap<>();
+        JSONObject all = object(KEY_PROFILES);
+        for (Iterator<String> it = all.keys(); it.hasNext(); ) {
+            String k = it.next();
+            out.put(k, Routing.Profile.fromJson(all.optJSONObject(k)));
+        }
+        return out;
+    }
+
+    /** Saves a game's settings, or with null removes them. */
+    void setProfile(String pkg, Routing.Profile p) {
+        JSONObject all = object(KEY_PROFILES);
+        try {
+            if (p == null) all.remove(pkg);
+            else all.put(pkg, p.toJson());
+        } catch (JSONException ignored) {
+        }
+        sp.edit().putString(KEY_PROFILES, all.toString()).apply();
+    }
+
+    /** The combo for a hotkey action, or "" when it's off. */
+    String hotkey(String action) { return object(KEY_HOTKEYS).optString(action, ""); }
+
+    /** Sets an action's combo ("" for off). A combo belongs to one action: others using it lose it. */
+    void setHotkey(String action, String combo) {
+        JSONObject all = object(KEY_HOTKEYS);
+        try {
+            for (String a : Hotkeys.ACTIONS) if (combo.equals(all.optString(a)) && !a.equals(action)) all.remove(a);
+            if (combo.isEmpty()) all.remove(action);
+            else all.put(action, combo);
+        } catch (JSONException ignored) {
+        }
+        sp.edit().putString(KEY_HOTKEYS, all.toString()).apply();
+    }
+
     /** The controller marked as the Thor's own controls, or "" to detect them. */
     String builtin() { return sp.getString(KEY_BUILTIN, ""); }
     void setBuiltin(String key) { sp.edit().putString(KEY_BUILTIN, key).apply(); }
@@ -133,6 +170,12 @@ final class Prefs {
         for (Iterator<String> it = pads.keys(); it.hasNext(); ) {
             String k = it.next();
             c.pads.put(k, Routing.PadSettings.fromJson(pads.optJSONObject(k)));
+        }
+        c.profiles.putAll(profiles());
+        JSONObject hk = object(KEY_HOTKEYS);
+        for (Iterator<String> it = hk.keys(); it.hasNext(); ) {
+            String k = it.next();
+            if (Hotkeys.mask(hk.optString(k)) != 0) c.hotkeys.put(k, hk.optString(k));
         }
         return c;
     }

@@ -37,6 +37,12 @@ final class PhysicalPad {
     boolean warnedLow;
     /** The Thor's key codes already written to the log, to diagnose its buttons. */
     private final java.util.BitSet loggedKeys = new java.util.BitSet();
+    /** Hotkeys: buttons held back from the player pad until let go, and combos already run. */
+    long suppress;
+    int hotkeyLatch;
+    /** The last button pressed (a PadState button, for press-to-remap) and a count of presses. */
+    volatile int lastPressed = -1, pressSeq;
+    private long prevButtons;
     /** It turned down a rumble effect. */
     volatile boolean cantRumble;
     private boolean monotonic;
@@ -116,6 +122,7 @@ final class PhysicalPad {
                             }
                         }
                         if (frame) {
+                            notePress();
                             listener.onFrame(PhysicalPad.this);
                             measure(reportUs);
                         }
@@ -133,6 +140,20 @@ final class PhysicalPad {
         }, "PadBridge read " + dev.path);
         reader.start();
         return true;
+    }
+
+    /** Notes a newly pressed button (a trigger past halfway counts), for press-to-remap. */
+    private void notePress() {
+        PadState s = mapper.state;
+        long now = s.buttons;
+        if (s.axes[PadState.LT] > 0.5f) now |= 1L << PadState.L2;
+        if (s.axes[PadState.RT] > 0.5f) now |= 1L << PadState.R2;
+        long down = now & ~prevButtons & ((1L << PadState.BUTTONS) - 1);
+        prevButtons = now;
+        if (down != 0) {
+            lastPressed = Long.numberOfTrailingZeros(down);
+            pressSeq++;
+        }
     }
 
     private static volatile boolean priorityLogged;

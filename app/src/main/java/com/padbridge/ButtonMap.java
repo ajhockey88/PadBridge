@@ -4,6 +4,9 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.graphics.Color;
+import android.os.Handler;
+import android.os.Looper;
+import android.view.KeyEvent;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -38,20 +41,44 @@ final class ButtonMap {
         return n == 0 ? "Every button presses itself" : n == 1 ? "1 button remapped" : n + " buttons remapped";
     }
 
-    /** Shows the map; `save` runs after each change. */
-    static void show(final Activity a, String controller, final Routing.PadSettings s, final Runnable save) {
+    /**
+     * Shows the map; `save` runs after each change. Pressing a button on the controller (`key`,
+     * or with null any controller) picks it, as well as tapping it.
+     */
+    static void show(final Activity a, String controller, final Routing.PadSettings s, final Runnable save,
+                     final String key) {
+        final boolean[] picking = {false};
+        final java.util.Map<String, Integer> seen = new java.util.HashMap<>();
+        final Runnable baseline = new Runnable() {
+            @Override public void run() {
+                seen.clear();
+                for (EngineControl.Controller c : status(a).controllers) seen.put(c.key, c.pressSeq);
+            }
+        };
+        baseline.run();
         final float d = a.getResources().getDisplayMetrics().density;
         final LinearLayout box = new LinearLayout(a);
         box.setOrientation(LinearLayout.VERTICAL);
         box.setPadding((int) (24 * d), (int) (2 * d), (int) (24 * d), (int) (6 * d));
         final Runnable[] fill = new Runnable[1];
+        final Picker[] openPick = new Picker[1];
         fill[0] = new Runnable() {
             @Override public void run() {
                 box.removeAllViews();
-                TextView lead = Ui.plain(a, "The button on this controller, and what its player pad gets. Tap one to change "
-                        + "it. Only this controller changes", 13, Ui.SUB);
-                lead.setPadding(0, 0, 0, (int) (8 * d));
+                TextView lead = Ui.plain(a, key != null
+                        ? "The button on this controller, and what its player pad gets. Only this controller changes"
+                        : "The button on any controller, and what its player pad gets, while this game is in front",
+                        13, Ui.SUB);
+                lead.setPadding(0, 0, 0, (int) (6 * d));
                 box.addView(lead);
+                TextView press = Ui.plain(a, "👆  Press a button on the " + (key != null ? "controller" : "controller you're "
+                        + "using") + " to change it, or tap it here", 13, Ui.ACCENT_TEXT);
+                press.setPadding((int) (12 * d), (int) (8 * d), (int) (12 * d), (int) (8 * d));
+                press.setBackground(Ui.round(Ui.CHIP, 10 * d));
+                LinearLayout.LayoutParams plp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT);
+                plp.bottomMargin = (int) (6 * d);
+                box.addView(press, plp);
                 LinearLayout row = null;
                 for (int i = 0; i < PadState.BUTTONS; i++) {
                     if (i % 2 == 0) {
@@ -77,12 +104,7 @@ final class ButtonMap {
                     cell.setOnClickListener(new View.OnClickListener() {
                         @Override public void onClick(View v) {
                             Haptics.play(a, Haptics.PICK);
-                            pick(a, b, s, new Runnable() {
-                                @Override public void run() {
-                                    save.run();
-                                    fill[0].run();
-                                }
-                            });
+                            openPick[0].pick(b);
                         }
                     });
                     LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
@@ -93,6 +115,23 @@ final class ButtonMap {
                 TextView note = Ui.plain(a, "The Thor's Home, Back and volume buttons always stay Android's", 12, Ui.DIM);
                 note.setPadding(0, (int) (10 * d), 0, 0);
                 box.addView(note);
+            }
+        };
+        openPick[0] = new Picker() {
+            @Override public void pick(int b) {
+                if (picking[0]) return;
+                picking[0] = true;
+                ButtonMap.pick(a, b, s, new Runnable() {
+                    @Override public void run() {
+                        save.run();
+                        fill[0].run();
+                    }
+                }, new Runnable() {
+                    @Override public void run() {
+                        picking[0] = false;
+                        baseline.run(); // presses made in the list don't count
+                    }
+                });
             }
         };
         fill[0].run();
@@ -117,11 +156,50 @@ final class ButtonMap {
                 });
             }
         });
+        // A button pressed on the controller picks it. Its press also reaches the player pad,
+        // and so this screen: those are held back here, so they don't tap the buttons above.
+        dialog.setOnKeyListener(new DialogInterface.OnKeyListener() {
+            @Override public boolean onKey(DialogInterface di, int code, KeyEvent ev) {
+                android.view.InputDevice dev = ev.getDevice();
+                boolean pad = dev != null && dev.getName() != null && dev.getName().startsWith("PadBridge Player");
+                return pad && (KeyEvent.isGamepadButton(code) || (code >= KeyEvent.KEYCODE_DPAD_UP
+                        && code <= KeyEvent.KEYCODE_DPAD_CENTER));
+            }
+        });
+        final Handler handler = new Handler(Looper.getMainLooper());
+        final Runnable watch = new Runnable() {
+            @Override public void run() {
+                if (!picking[0]) {
+                    for (EngineControl.Controller c : status(a).controllers) {
+                        if (key != null && !key.equals(c.key)) continue;
+                        Integer was = seen.get(c.key);
+                        seen.put(c.key, c.pressSeq);
+                        if (was != null && was != c.pressSeq && c.pressed >= 0 && c.pressed < PadState.BUTTONS) {
+                            Haptics.play(a, Haptics.PICK);
+                            openPick[0].pick(c.pressed);
+                            break;
+                        }
+                    }
+                }
+                handler.postDelayed(this, 150);
+            }
+        };
+        dialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
+            @Override public void onDismiss(DialogInterface di) { handler.removeCallbacks(watch); }
+        });
         dialog.show();
+        handler.postDelayed(watch, 150);
+    }
+
+    private interface Picker { void pick(int b); }
+
+    private static EngineControl.Status status(Activity a) {
+        return MainActivity.demoStatus != null ? MainActivity.demoStatus : EngineControl.status(a);
     }
 
     /** Picks what button b presses. */
-    private static void pick(Activity a, final int b, final Routing.PadSettings s, final Runnable done) {
+    private static void pick(Activity a, final int b, final Routing.PadSettings s, final Runnable done,
+                             final Runnable closed) {
         final String[] items = new String[PadState.BUTTONS + 1];
         int current = s.mapped(b);
         for (int i = 0; i < PadState.BUTTONS; i++) {
@@ -135,6 +213,9 @@ final class ButtonMap {
                         s.setMapped(b, which == PadState.BUTTONS ? Routing.PadSettings.UNMAPPED : which);
                         done.run();
                     }
+                })
+                .setOnDismissListener(new DialogInterface.OnDismissListener() {
+                    @Override public void onDismiss(DialogInterface dialog) { closed.run(); }
                 })
                 .show();
     }

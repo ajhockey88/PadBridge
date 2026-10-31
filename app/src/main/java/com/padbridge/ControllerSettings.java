@@ -136,7 +136,7 @@ final class ControllerSettings {
                         save.run();
                         mapSummary.setText(ButtonMap.summary(s));
                     }
-                });
+                }, key);
             }
         });
         map.addView(remap);

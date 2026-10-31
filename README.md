@@ -55,8 +55,8 @@ Once it's on, you can close PadBridge: it keeps running.
 - 🎛️ **A controller's settings:** rumble strength (or off) with a 📳 Test button, stick deadzone
   for worn sticks that drift, invert the right stick up/down, Nintendo layout (swaps A/B and
   X/Y), and its own button map.
-- 🎛️ **Button mapping:** in a controller's settings, tap **Remap** to choose what each of its
-  buttons presses on its player pad, or turn a button off. It's per controller, so a friend's pad
+- 🎛️ **Button mapping:** in a controller's settings, tap **Remap**, then press a button on the
+  controller (or tap it) and choose what it presses on its player pad, or turn it off. It's per controller, so a friend's pad
   can have A and B swapped while the Thor's controls stay as they are. An analog trigger moves
   with its button. The Thor's Home, Back and volume buttons always stay Android's.
 - ⚡ **Speed:** each controller's card shows how often it reports (for example ⚡ 8 ms, about 125
@@ -73,6 +73,12 @@ Once it's on, you can close PadBridge: it keeps running.
 - 🧪 **Test** opens the controller test on the top screen: every player pad drawn live, so you
   can check who's who before starting a game.
 
+- 🎯 **Games:** in Settings > Games, add a game or emulator to give it its own Player 1 (Thor,
+  controller or both) and a button map for every controller. They switch on by themselves while
+  it's in front, even with PadBridge open on the other screen, and off when you leave it.
+- ⌨️ **Hotkeys:** in Settings > Hotkeys, give Android's Home and Back, swapping Players 1 and 2,
+  and opening PadBridge a button combo, such as Select + Start or Guide + B. It works on any
+  controller, and the combo's buttons don't reach the game. All off by default.
 - 🔁 **Starts by itself:** after a restart PadBridge comes back on its own as soon as Shizuku is
   running, and if its engine ever stops, it's started again within a few seconds. Shizuku
   itself has to run first: with root it starts with the Thor; without root it has to be started
@@ -197,7 +203,8 @@ report) can be checked on a desktop JVM, no Android needed:
 
 ```
 javac -d build/test -cp deps/android-all-14-robolectric-10818077.jar \
-    app/src/main/java/com/padbridge/{Evdev,PadState,InputScan,PadMapper,Routing,PlayerPad,Battery}.java test/EngineTest.java
+    app/src/main/java/com/padbridge/{Evdev,PadState,InputScan,PadMapper,Routing,PlayerPad,Battery,Hotkeys,Foreground,Engine,VirtualPads,PhysicalPad,UinputDevice,Native}.java \
+    test/EngineTest.java
 java -cp build/test:deps/android-all-14-robolectric-10818077.jar com.padbridge.EngineTest
 ```
 
