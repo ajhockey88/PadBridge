@@ -1,7 +1,8 @@
-🧹 PadBridge 1.0.1: no more duplicate player pads in your emulators.
+🔢 PadBridge 1.0.2: the number of players always matches what you pick.
 
-## ✨ What's new in 1.0.1
-- 🧹 **No duplicate players:** when PadBridge's engine restarted (after changing the number of players, turning it off and on, or an update), the old player pads could stay behind, so emulators like Eden listed "PadBridge Player 1" more than once. PadBridge now unplugs them when it stops, and clears any leftovers when it starts
+## ✨ What's new in 1.0.2
+- 🔢 **Players match:** tapping **−** or **+** quickly could leave PadBridge's engine a step behind, so games saw 5 players while PadBridge showed 4. Every change now reaches the engine
+- 🃏 **Roomier player cards:** with three or four players, the cards drop the "Games see…" line so the controller fits, even with bigger system text
 
 ---
 
@@ -20,6 +21,7 @@ PadBridge bridges the Thor's controls and your controllers onto steady player co
 - 🔄 **Updates:** check, see what's new, and install from Settings, or reinstall the current release
 
 ## 📜 Release history
+- **1.0.2:** the number of players always matches, and roomier player cards
 - **1.0.1:** no more duplicate player pads
 - **1.0:** first release: the Thor's controls and your controllers as fixed players, up to 8, with rumble
 

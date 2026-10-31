@@ -431,7 +431,7 @@ public class MainActivity extends Activity implements ShizukuClient.Listener {
         nlp.leftMargin = (int) ((mini ? 7 : 10) * d);
         head.addView(name, nlp);
         c.addView(head);
-        if (!mini) {
+        if (!compact) {
             TextView sees = Ui.plain(this, "Games see “PadBridge Player " + p + "”", 12, Ui.DIM);
             sees.setPadding(0, (int) (4 * d), 0, (int) (8 * d));
             sees.setSingleLine(true);
