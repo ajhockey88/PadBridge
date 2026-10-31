@@ -27,8 +27,8 @@ final class VirtualPads {
     /** In the `uinput` tool's environment: it holds PadBridge's player pads. */
     static final String MARK = "PADBRIDGE_PADS";
     /**
-     * The tool's id for "PadBridge Thor Keys", a small keyboard that passes the Thor's Back and
-     * Home buttons on to Android while PadBridge holds the Thor's controls.
+     * The tool's id for "PadBridge Thor Keys", a small keyboard that passes the Thor's Back, Home,
+     * Recents and volume buttons on to Android while PadBridge holds the Thor's controls.
      */
     private static final int KEYS_ID = 100;
     private final File log;
@@ -109,7 +109,7 @@ final class VirtualPads {
     synchronized void systemKey(int code, boolean down) {
         if (stdin == null) return;
         try {
-            write("{\"id\":" + KEYS_ID + ",\"command\":\"inject\",\"events\":[" + Evdev.EV_KEY + "," + code + ","
+            write("{\"id\":" + KEYS_ID + ",\"command\":\"inject\",\"events\":[" + Evdev.EV_KEY + "," + Evdev.systemKeyForAndroid(code) + ","
                     + (down ? 1 : 0) + "," + Evdev.EV_SYN + ",0,0]}");
         } catch (IOException e) {
             Engine.log("uinput write failed: " + e);
@@ -118,7 +118,7 @@ final class VirtualPads {
 
     private static String keysJson() {
         StringBuilder keys = new StringBuilder();
-        for (int k : Evdev.SYSTEM_KEYS) keys.append(k).append(',');
+        for (int k : Evdev.SYSTEM_KEYS) if (k != Evdev.KEY_HOME) keys.append(k).append(',');
         keys.setLength(keys.length() - 1);
         return "{\"id\":" + KEYS_ID + ",\"command\":\"register\",\"name\":\"PadBridge Thor Keys\",\"vid\":"
                 + 0x1209 + ",\"pid\":" + 0x5040 + ",\"bus\":\"usb\",\"configuration\":[{\"type\":"

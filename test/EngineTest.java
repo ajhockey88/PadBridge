@@ -284,6 +284,9 @@ public class EngineTest {
     static void thorSystemKeys() {
         check("Back is Android's", Evdev.isSystemKey(Evdev.KEY_BACK));
         check("Home is Android's", Evdev.isSystemKey(Evdev.KEY_HOMEPAGE));
+        check("the Thor's Home is Android's", Evdev.isSystemKey(Evdev.KEY_HOME));
+        check("the Thor's Home goes on as Home", Evdev.systemKeyForAndroid(Evdev.KEY_HOME) == Evdev.KEY_HOMEPAGE);
+        check("volume is Android's", Evdev.isSystemKey(Evdev.KEY_VOLUMEUP) && Evdev.isSystemKey(Evdev.KEY_VOLUMEDOWN));
         check("Select is a player's", !Evdev.isSystemKey(Evdev.BTN_SELECT));
     }
 

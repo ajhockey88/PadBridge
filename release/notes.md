@@ -1,9 +1,11 @@
-🔋 PadBridge 1.0.4: see every controller's battery, and get a heads-up before one dies.
+🏠 PadBridge 1.0.5: the Thor's Home button works while PadBridge is on.
 
-## ✨ What's new in 1.0.4
-- 🔋 **Battery on the cards:** each controller's card shows its battery, with 🔌 while it charges. Its settings show it too
-- 🔔 **Low battery notice:** when a controller drops to 15%, the Thor tells you which player it is, once, until it charges
-- 🔍 **Diagnostics:** PadBridge's log now notes which key each of the Thor's buttons sends, to track down button problems
+## ✨ What's new in 1.0.5
+- 🏠 **Home works:** the Thor sends its Home button differently from other controllers, so PadBridge missed it. It now goes to Android, like Back and Recents
+- 🔊 **Volume too:** volume presses from the Thor's controls also go to Android
+
+## 🔋 Also new since 1.0.3
+- 🔋 **Battery on the cards:** each controller's card shows its battery, with 🔌 while it charges, and the Thor gives notice when one drops to 15%
 
 ---
 
@@ -23,6 +25,7 @@ PadBridge bridges the Thor's controls and your controllers onto steady player co
 - 🔄 **Updates:** check, see what's new, and install from Settings, or reinstall the current release
 
 ## 📜 Release history
+- **1.0.5:** the Thor's Home button works while PadBridge is on
 - **1.0.4:** controller battery on the cards, with a low battery notice
 - **1.0.3:** the Thor's Back and Home buttons work, and players stay in order
 - **1.0.2:** the number of players always matches, and roomier player cards
