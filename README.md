@@ -25,8 +25,10 @@ time. Map them once in each emulator and you're done, whichever controllers you 
 | <img src="docs/screenshots/swap.png" width="400" alt="Swap with four players: Player 1 is picked, tap the player to swap with"> | <img src="docs/screenshots/test.png" width="400" alt="Controller test on the top screen with Player 1 and Player 2 drawn live"> |
 | 🚀 First-run setup | ⚙️ Settings |
 | <img src="docs/screenshots/setup.png" width="400" alt="Setup steps: install Shizuku, start it, allow PadBridge"> | <img src="docs/screenshots/settings.png" width="400" alt="Settings, Players tab: who is Player 1, players always ready, player pad type"> |
-| 🕹️ Controllers | |
-| <img src="docs/screenshots/controllers.png" width="400" alt="Settings, Controllers tab: each controller seen, with its player, Nintendo layout, Thor's own controls and Forget"> | |
+| 🕹️ Controllers | 🎛️ A controller's settings |
+| <img src="docs/screenshots/controllers.png" width="400" alt="Settings, Controllers tab: each controller seen, with its player, rumble and stick settings, Thor's own controls and Forget"> | <img src="docs/screenshots/controller-settings.png" width="400" alt="A controller's settings: how quickly it reports, rumble strength with a test button, stick deadzone, invert right stick, Nintendo layout"> |
+| ℹ️ About | |
+| <img src="docs/screenshots/about.png" width="400" alt="Settings, About tab: version, the MIT license and thanks"> | |
 
 The screenshots are drawn from the app's own code with made-up controllers; pictures from a
 Thor will replace them.
@@ -47,9 +49,18 @@ Once it's on, you can close PadBridge: it keeps running.
   controller still gets the next free player by itself.
 - 🔁 **Swap** flips Player 1 and Player 2 in one tap. With more than two players, tap Swap and
   then the two players to swap (📌 their controllers stay there afterwards).
-- ⋯ **Tap a controller** to fix it to a player (a numbered chip for each, 1 to 8) (📌 it stays there whatever the mode), leave it to
-  Android, swap A/B and X/Y for Nintendo-style controllers, or mark it as the Thor's own controls
-  if PadBridge didn't spot them.
+- ⋯ **Tap a controller** to fix it to a player (a numbered chip for each, 1 to 8; 📌 it stays
+  there whatever the mode), leave it to Android, open its settings, or mark it as the Thor's own
+  controls if PadBridge didn't spot them.
+- 🎛️ **A controller's settings:** rumble strength (or off) with a 📳 Test button, stick deadzone
+  for worn sticks that drift, invert the right stick up/down, and Nintendo layout (swaps A/B and
+  X/Y).
+- ⚡ **Speed:** each controller's card shows how often it reports (for example ⚡ 8 ms, about 125
+  times a second) and how long PadBridge takes to pass a report on (usually well under a
+  millisecond). The time a wireless controller takes to reach the Thor can't be seen from
+  software, but a slow report rate is a good sign of a laggy connection.
+- 📳 **Rumble:** when a game rumbles a player, PadBridge rumbles that player's controllers. The
+  Thor's own controls rumble with the Thor's motor.
 - 🧪 **Test** opens the controller test on the top screen: every player pad drawn live, so you
   can check who's who before starting a game.
 
@@ -73,6 +84,7 @@ their own.
 - 📳 **Haptics:** a feel (Off, Tick, Click, Heavy, Double or Buzz) and strength for each action,
   with a preview as you change them.
 - 🔄 **Updates:** **Check for updates** and **Reinstall**, as in ThorPad.
+- ℹ️ **About:** the version, the license and thanks.
 
 Long-press a heading in Settings to save diagnostics to Download (PadBridge's log, the input
 devices and screenshots), for bug reports.
@@ -106,6 +118,12 @@ is only a button pushes its axis fully, and an analog trigger presses its button
 so every controller looks the same through a player pad. When PadBridge is switched off, or a
 controller is left to Android, the engine lets go and Android sees the controller as usual.
 
+Rumble goes the other way. Each player pad tells Android it can rumble, and the `uinput` tool
+reports when a game uses it. The engine then plays a rumble effect on that player's controllers
+through the same node it grabbed. Java can't upload a rumble effect, so a tiny native helper
+(`app/src/main/native/padbridge.c`, no libraries, a few system calls) does that and also puts
+the controller's event times on the same clock as the engine, for the speed readout.
+
 The app and the engine talk through two small files in PadBridge's own folder: the app writes
 the settings, the engine writes what it's doing.
 
@@ -120,10 +138,18 @@ PadBridge is its own code, written for the Thor: it uses Shizuku and Android's `
 instead of the Odin firmware's privileged service, and adds stable players for two or more
 controllers.
 
+## 📄 License
+
+PadBridge is under the [MIT License](LICENSE): use, copy, change and share it freely, keeping the
+notice. It talks to Shizuku with Shizuku's API classes (Apache License 2.0). Settings > About
+shows the license in the app.
+
 ## 🏗️ Building
 
 `./build.sh` builds `build/PadBridge.apk` with Ubuntu's packaged Android tools (see the script
-header); it downloads the two jars it compiles against from Maven Central. The project also has
+header); it downloads the two jars it compiles against from Maven Central. With `clang` and
+`lld` installed it also rebuilds the native helper; otherwise it uses the copy in
+`app/src/main/jniLibs`. The project also has
 standard Gradle files, so it can be opened and built in Android Studio.
 
 The engine's logic (finding controllers, reading them, picking players, what the player pads
