@@ -30,6 +30,13 @@ final class PhysicalPad {
      * PadBridge takes from a report to passing it to the player pad. Averages; 0 until known.
      */
     volatile float intervalMs, addedMs;
+    /** Its battery, or null if it doesn't report one; read now and then by the engine. */
+    volatile Battery battery;
+    long batteryReadAt;
+    /** The low battery notice was shown, until it charges again. */
+    boolean warnedLow;
+    /** The Thor's key codes already written to the log, to diagnose its buttons. */
+    private final java.util.BitSet loggedKeys = new java.util.BitSet();
     /** It turned down a rumble effect. */
     volatile boolean cantRumble;
     private boolean monotonic;
@@ -91,6 +98,12 @@ final class PhysicalPad {
                             int code = (buf[p + 2] & 0xff) | (buf[p + 3] & 0xff) << 8;
                             int value = (buf[p + 4] & 0xff) | (buf[p + 5] & 0xff) << 8
                                     | (buf[p + 6] & 0xff) << 16 | buf[p + 7] << 24;
+                            if (builtin && type == Evdev.EV_KEY && value == 1 && !loggedKeys.get(code)) {
+                                // Which key each of the Thor's buttons sends, once each, for diagnostics.
+                                loggedKeys.set(code);
+                                Engine.log("Thor button: key " + code + (Evdev.isSystemKey(code) ? " (to Android)"
+                                        : mapper.button(code) >= 0 ? "" : " (not used)"));
+                            }
                             if (builtin && type == Evdev.EV_KEY && Evdev.isSystemKey(code)) {
                                 // Held-key repeats (value 2) aren't needed: Android times long presses itself.
                                 if (value != 2) listener.onSystemKey(code, value != 0);

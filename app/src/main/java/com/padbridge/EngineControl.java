@@ -35,6 +35,9 @@ final class EngineControl {
         int player;
         /** ms between reports, and ms PadBridge adds; 0 until known. */
         double intervalMs, addedMs;
+        /** Battery percent, or -1 when it doesn't report one. */
+        int battery = -1;
+        boolean charging;
     }
 
     /** What the engine last reported. */
@@ -91,6 +94,8 @@ final class EngineControl {
                 c.intervalMs = d.optDouble("intervalMs", 0);
                 c.addedMs = d.optDouble("addedMs", 0);
                 c.cantRumble = d.optBoolean("cantRumble");
+                c.battery = d.optInt("battery", -1);
+                c.charging = d.optBoolean("charging");
                 s.controllers.add(c);
             }
         } catch (JSONException ignored) {

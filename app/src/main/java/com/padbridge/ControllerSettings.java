@@ -47,7 +47,10 @@ final class ControllerSettings {
         final Handler handler = new Handler(Looper.getMainLooper());
         final Runnable tick = new Runnable() {
             @Override public void run() {
-                speed.setText(speedText(find(a, key)));
+                EngineControl.Controller ctl = find(a, key);
+                String battery = ctl == null ? "" : battery(ctl);
+                speed.setText(speedText(ctl) + (battery.isEmpty() ? "" : "\n" + battery + " battery"
+                        + (ctl.charging ? ", charging" : lowBattery(ctl) ? ", charge it soon" : "")));
                 handler.postDelayed(this, 700);
             }
         };
@@ -146,6 +149,16 @@ final class ControllerSettings {
     static String shortSpeed(EngineControl.Controller ctl) {
         if (!ctl.active || ctl.intervalMs <= 0) return "";
         return String.format(Locale.US, "⚡ %.0f ms · +%s", ctl.intervalMs, added(ctl.addedMs));
+    }
+
+    /** The battery, on the controller's card: "🔋 80%", "🔌 80%" charging, "🔋 12% low". Empty if unknown. */
+    static String battery(EngineControl.Controller ctl) {
+        if (ctl.battery < 0) return "";
+        return (ctl.charging ? "🔌 " : "🔋 ") + ctl.battery + "%" + (lowBattery(ctl) ? " low" : "");
+    }
+
+    static boolean lowBattery(EngineControl.Controller ctl) {
+        return ctl.battery >= 0 && !ctl.charging && ctl.battery <= Engine.BATTERY_LOW;
     }
 
     private static String added(double ms) {
