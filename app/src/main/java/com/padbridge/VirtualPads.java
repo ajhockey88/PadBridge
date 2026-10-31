@@ -27,10 +27,13 @@ final class VirtualPads {
     /** In the `uinput` tool's environment: it holds PadBridge's player pads. */
     static final String MARK = "PADBRIDGE_PADS";
     /**
-     * The tool's id for "PadBridge Thor Keys", a small keyboard that passes the Thor's Back, Home,
-     * Recents and volume buttons on to Android while PadBridge holds the Thor's controls.
+     * The Thor's system buttons (Back, Home, Recents, volume) while PadBridge holds its controls:
+     * a small keyboard with the Thor's own name, maker and model, so Android reads its keys with
+     * the Thor's key layout and apps that watch the Thor's buttons still see them. The tool can't
+     * remove one device, so a Thor that changes identity (another handle style) gets a new one.
      */
-    private static final int KEYS_ID = 100;
+    private int keysId;
+    private String keysIdentity = "";
     private final File log;
     private final Listener listener;
     private Process process;
@@ -67,8 +70,6 @@ final class VirtualPads {
             process = pb.start();
             stdin = process.getOutputStream();
             listen(process);
-            write(keysJson());
-            sleep(100);
         }
         while (pads.size() < players) {
             PlayerPad pad = new PlayerPad(pads.size() + 1, style);
@@ -105,25 +106,36 @@ final class VirtualPads {
         }
     }
 
+    /** Makes sure the Thor's system buttons have a keyboard that looks like the Thor. */
+    synchronized void systemKeys(InputScan.Device thor) throws IOException {
+        if (stdin == null) return;
+        String identity = thor.vendor + ":" + thor.product + ":" + thor.name;
+        if (identity.equals(keysIdentity)) return;
+        keysId = keysId == 0 ? 100 : keysId + 1;
+        keysIdentity = identity;
+        write(keysJson(keysId, thor));
+        Engine.log("system buttons pass on as \"" + thor.name + "\"");
+    }
+
     /** Presses or lets go of one of the Thor's system buttons, for Android. */
     synchronized void systemKey(int code, boolean down) {
-        if (stdin == null) return;
+        if (stdin == null || keysId == 0) return;
         try {
-            write("{\"id\":" + KEYS_ID + ",\"command\":\"inject\",\"events\":[" + Evdev.EV_KEY + "," + Evdev.systemKeyForAndroid(code) + ","
+            write("{\"id\":" + keysId + ",\"command\":\"inject\",\"events\":[" + Evdev.EV_KEY + "," + code + ","
                     + (down ? 1 : 0) + "," + Evdev.EV_SYN + ",0,0]}");
         } catch (IOException e) {
             Engine.log("uinput write failed: " + e);
         }
     }
 
-    private static String keysJson() {
+    static String keysJson(int id, InputScan.Device thor) {
         StringBuilder keys = new StringBuilder();
-        for (int k : Evdev.SYSTEM_KEYS) if (k != Evdev.KEY_HOME) keys.append(k).append(',');
+        for (int k : Evdev.SYSTEM_KEYS) keys.append(k).append(',');
         keys.setLength(keys.length() - 1);
-        return "{\"id\":" + KEYS_ID + ",\"command\":\"register\",\"name\":\"PadBridge Thor Keys\",\"vid\":"
-                + 0x1209 + ",\"pid\":" + 0x5040 + ",\"bus\":\"usb\",\"configuration\":[{\"type\":"
-                + Evdev.UI_SET_EVBIT + ",\"data\":[" + Evdev.EV_KEY + "]},{\"type\":" + Evdev.UI_SET_KEYBIT
-                + ",\"data\":[" + keys + "]}]}";
+        return String.format(java.util.Locale.US, "{\"id\":%d,\"command\":\"register\",\"name\":%s,\"vid\":%d,\"pid\":%d,"
+                        + "\"bus\":\"usb\",\"configuration\":[{\"type\":%d,\"data\":[%d]},{\"type\":%d,\"data\":[%s]}]}",
+                id, org.json.JSONObject.quote(thor.name), thor.vendor, thor.product,
+                Evdev.UI_SET_EVBIT, Evdev.EV_KEY, Evdev.UI_SET_KEYBIT, keys);
     }
 
     synchronized void stop() {
@@ -135,6 +147,8 @@ final class VirtualPads {
         process = null;
         stdin = null;
         pads.clear();
+        keysId = 0;
+        keysIdentity = "";
     }
 
     /** Reads the tool's output: rumble for the engine, everything else to the log. */

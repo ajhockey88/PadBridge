@@ -10,16 +10,11 @@ final class Evdev {
     static final int KEY_HOME = 102, KEY_VOLUMEDOWN = 114, KEY_VOLUMEUP = 115, KEY_BACK = 158, KEY_MENU = 139,
             KEY_HOMEPAGE = 172, KEY_APPSELECT = 580;
     /**
-     * The Thor's buttons that work Android itself, passed on to it rather than to a player. The
-     * Thor sends Home as KEY_HOME, which only its own key layout makes Home, so it's passed on as
-     * KEY_HOMEPAGE (see {@link #systemKeyForAndroid}).
+     * The Thor's buttons that work Android itself, passed on to it rather than to a player,
+     * unchanged: the Thor sends Home as KEY_HOME, which its own key layout (and apps that watch
+     * its buttons) turn into Home.
      */
     static final int[] SYSTEM_KEYS = {KEY_HOME, KEY_HOMEPAGE, KEY_BACK, KEY_APPSELECT, KEY_VOLUMEDOWN, KEY_VOLUMEUP};
-
-    /** The key "PadBridge Thor Keys" sends for one of the Thor's system buttons. */
-    static int systemKeyForAndroid(int code) {
-        return code == KEY_HOME ? KEY_HOMEPAGE : code;
-    }
 
     static boolean isSystemKey(int code) {
         for (int k : SYSTEM_KEYS) if (k == code) return true;
