@@ -1,8 +1,9 @@
-🏠 PadBridge 1.0.5: the Thor's Home button works while PadBridge is on.
+🏠 PadBridge 1.0.6: Home and Back work as usual with the Thor's controls on Player 1.
 
-## ✨ What's new in 1.0.5
-- 🏠 **Home works:** the Thor sends its Home button differently from other controllers, so PadBridge missed it. It now goes to Android, like Back and Recents
-- 🔊 **Volume too:** volume presses from the Thor's controls also go to Android
+## ✨ What's new in 1.0.6
+- 🏠 **Home and Back as usual:** while PadBridge holds the Thor's controls, its Back, Home, Recents and volume buttons now reach Android looking exactly like the Thor's own, so the Thor's button layout and apps that watch its buttons (like Wayfinder) keep working
+- 🎮 **Thor found in any handle style:** in Xbox style the Thor calls itself "Xbox Wireless Controller", so PadBridge treated it as an outside controller and its Back and Home went to Player 1. PadBridge now recognizes it by AYN's maker id
+- 🔍 **Easier diagnostics:** saving diagnostics also copies the engine log, ready to paste in a message, and every save gets new file names
 
 ## 🔋 Also new since 1.0.3
 - 🔋 **Battery on the cards:** each controller's card shows its battery, with 🔌 while it charges, and the Thor gives notice when one drops to 15%
@@ -25,6 +26,7 @@ PadBridge bridges the Thor's controls and your controllers onto steady player co
 - 🔄 **Updates:** check, see what's new, and install from Settings, or reinstall the current release
 
 ## 📜 Release history
+- **1.0.6:** Home and Back work as usual with the Thor's controls on Player 1, in any handle style
 - **1.0.5:** the Thor's Home button works while PadBridge is on
 - **1.0.4:** controller battery on the cards, with a low battery notice
 - **1.0.3:** the Thor's Back and Home buttons work, and players stay in order

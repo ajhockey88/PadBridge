@@ -20,6 +20,7 @@ public class EngineTest {
         playerPadsReportChanges();
         thorSystemKeys();
         readsBatteries();
+        findsThorInXboxStyle();
         if (failures > 0) {
             System.out.println(failures + " FAILED");
             System.exit(1);
@@ -285,7 +286,6 @@ public class EngineTest {
         check("Back is Android's", Evdev.isSystemKey(Evdev.KEY_BACK));
         check("Home is Android's", Evdev.isSystemKey(Evdev.KEY_HOMEPAGE));
         check("the Thor's Home is Android's", Evdev.isSystemKey(Evdev.KEY_HOME));
-        check("the Thor's Home goes on as Home", Evdev.systemKeyForAndroid(Evdev.KEY_HOME) == Evdev.KEY_HOMEPAGE);
         check("volume is Android's", Evdev.isSystemKey(Evdev.KEY_VOLUMEUP) && Evdev.isSystemKey(Evdev.KEY_VOLUMEDOWN));
         check("Select is a player's", !Evdev.isSystemKey(Evdev.BTN_SELECT));
     }
@@ -307,6 +307,19 @@ public class EngineTest {
         check("charging", Battery.near(input.toFile()).charging);
         java.nio.file.Files.write(supply.resolve("scope"), "System\n".getBytes());
         check("the system's battery isn't a controller's", Battery.near(input.toFile()) == null);
+    }
+
+    static void findsThorInXboxStyle() {
+        // The Thor in Xbox handle style: Xbox's name on a USB bus, but AYN's maker id. It
+        // connected after a real Xbox controller over Bluetooth.
+        String proc = "I: Bus=0005 Vendor=045e Product=0b13 Version=0509\n"
+                + "N: Name=\"Xbox Wireless Controller\"\nU: Uniq=44:16:22:aa:bb:cc\nH: Handlers=event12\n"
+                + "B: KEY=7fdb000000000000 0 40000000 0 0\nB: ABS=30627\n\n"
+                + "I: Bus=0003 Vendor=2020 Product=0112 Version=0001\n"
+                + "N: Name=\"Xbox Wireless Controller\"\nH: Handlers=event9\n"
+                + "B: KEY=7fff000000000000 0 0 0 0\nB: ABS=3003f\n";
+        List<InputScan.Device> devs = InputScan.parseProcDevices(proc, 64);
+        check("Thor found in Xbox style", Routing.builtinIndex(devs, new Routing.Config()) == 1);
     }
 
     static void check(String what, boolean ok) {

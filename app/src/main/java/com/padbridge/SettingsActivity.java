@@ -519,23 +519,37 @@ public class SettingsActivity extends Activity {
         new Thread(new Runnable() {
             @Override public void run() {
                 final boolean ok = ShizukuClient.runShell(
-                        "d=/sdcard/Download; cp '" + dir + "/engine.log' $d/padbridge-engine.txt; "
-                        + "cp '" + dir + "/status.json' $d/padbridge-status.txt; "
-                        + "cp '" + dir + "/config.json' $d/padbridge-config.txt; "
-                        + "cat /proc/bus/input/devices > $d/padbridge-devices.txt; "
-                        + "getevent -p > $d/padbridge-getevent.txt 2>&1; "
-                        + "dumpsys input > $d/padbridge-input.txt; "
+                        // A new time in each name: a file from last time may belong to another app now.
+                        "d=/sdcard/Download; t=$(date +%H%M%S); cat '" + dir + "/engine.log' > $d/padbridge-engine-$t.txt; "
+                        + "cat '" + dir + "/status.json' > $d/padbridge-status-$t.txt; "
+                        + "cat '" + dir + "/config.json' > $d/padbridge-config-$t.txt; "
+                        + "cat /proc/bus/input/devices > $d/padbridge-devices-$t.txt; "
+                        + "getevent -p > $d/padbridge-getevent-$t.txt 2>&1; "
+                        + "dumpsys input > $d/padbridge-input-$t.txt; "
                         + "i=0; for id in $(dumpsys SurfaceFlinger --display-id | sed -n 's/^Display \\([0-9]*\\).*/\\1/p'); do "
-                        + "i=$((i+1)); screencap -d $id -p $d/padbridge-screen-$i.png; done; true");
+                        + "i=$((i+1)); screencap -d $id -p $d/padbridge-screen-$t-$i.png; done; true");
+                final String log = Engine.read(new java.io.File(dir, "engine.log"));
                 runOnUiThread(new Runnable() {
                     @Override public void run() {
-                        Toast.makeText(SettingsActivity.this, ok
-                                ? "Saved padbridge-* files to Download"
-                                : "Couldn't save the diagnostics", Toast.LENGTH_LONG).show();
+                        boolean copied = copyLog(log);
+                        Toast.makeText(SettingsActivity.this, (ok ? "Saved padbridge-* files to Download" : "Couldn't save the diagnostics")
+                                + (copied ? ". The engine log is copied too: paste it in a message" : ""), Toast.LENGTH_LONG).show();
                     }
                 });
             }
         }, "PadBridge diagnostics").start();
+    }
+
+    /** Copies the end of the engine's log, so it can be pasted where a file won't upload. */
+    private boolean copyLog(String log) {
+        if (log == null || log.isEmpty()) return false;
+        String[] lines = log.split("\n");
+        StringBuilder sb = new StringBuilder("PadBridge " + versionName() + " engine log\n");
+        for (int i = Math.max(0, lines.length - 120); i < lines.length; i++) sb.append(lines[i]).append('\n');
+        android.content.ClipboardManager clip = (android.content.ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+        if (clip == null) return false;
+        clip.setPrimaryClip(android.content.ClipData.newPlainText("PadBridge engine log", sb.toString()));
+        return true;
     }
 
     // ---- Updates -------------------------------------------------------------------------------

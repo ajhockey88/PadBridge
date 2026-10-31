@@ -125,8 +125,13 @@ final class Routing {
 
     /**
      * Which controller is the Thor's own controls: the one the user marked, else the first
-     * that isn't USB or Bluetooth (or says AYN, Thor or Odin in its name). -1 if none.
+     * with AYN's maker id, or that isn't USB or Bluetooth, or says AYN, Thor or Odin in its name.
+     * -1 if none. (The Thor's handle styles rename it and can make it claim to be USB, as
+     * "Xbox Wireless Controller", but its maker id stays AYN's.)
      */
+    /** The maker id on the Thor's (and Odin's) built-in controls. */
+    static final int AYN_VENDOR = 0x2020;
+
     static int builtinIndex(List<InputScan.Device> devices, Config c) {
         if (!c.builtin.isEmpty()) {
             for (int i = 0; i < devices.size(); i++) if (c.builtin.equals(devices.get(i).key())) return i;
@@ -134,7 +139,7 @@ final class Routing {
         for (int i = 0; i < devices.size(); i++) {
             InputScan.Device d = devices.get(i);
             String n = d.name.toLowerCase(Locale.US);
-            if (!d.isExternal() || n.contains("ayn") || n.contains("thor") || n.contains("odin")) return i;
+            if (d.vendor == AYN_VENDOR || !d.isExternal() || n.contains("ayn") || n.contains("thor") || n.contains("odin")) return i;
         }
         return -1;
     }
