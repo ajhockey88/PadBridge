@@ -1,12 +1,14 @@
-⚡ PadBridge 1.1: faster than ever, your own buttons for each controller and each game, hotkeys, and back on by itself after a restart.
+🌉 PadBridge 1.0: use the Thor's controls and your controllers together, without remapping your emulators. Now faster, with button mapping, game profiles and hotkeys, and back on by itself after a restart.
 
-## ✨ What's new in 1.1
-- ⚡ **Faster:** player pads are now made straight on the Thor's input system, so a press goes from your controller to its player pad in one step, with no helper app, pipe or text in between. The speed readout now times that whole trip, to a hundredth of a millisecond
-- 🎛️ **Button mapping per controller:** swap any buttons, or turn one off, for one controller only (an analog trigger moves with its button). Open a controller's settings, tap **Remap** and just press the button you want to change
-- 🎯 **Game profiles:** give a game or emulator its own Player 1 and button map in Settings > **Games**. They switch on by themselves while it's in front, and off when you leave it
-- ⌨️ **Hotkeys:** Home, Back, swap Players 1 and 2, or open PadBridge with a button combo like Select + Start, from any controller, in Settings > **Hotkeys**
-- 🔁 **Starts by itself:** after a restart PadBridge comes back as soon as Shizuku is running, and if its engine ever stops, it starts again within seconds. Until Shizuku is running, a notice reminds you and opens Shizuku
-- 📳 **Truer rumble:** games' light and strong rumble now come through as the game asked, scaled by each controller's rumble strength
+## ✨ What's in 1.0
+- 🎮 **Fixed players:** the Thor's controls and every controller you connect become **PadBridge Player 1** to **8**, the same way every time, so you map each emulator once
+- ⚡ **Fast:** a press goes from your controller to its player pad in one step, with nothing in between. The speed readout times that whole trip, to a hundredth of a millisecond
+- 🎛️ **Button mapping per controller:** swap any buttons or turn one off, for one controller only. Tap **Remap** and just press the button you want to change
+- 🎯 **Game profiles:** give a game or emulator its own Player 1 and button map. They switch on by themselves while it's in front
+- ⌨️ **Hotkeys:** Home, Back, swap Players 1 and 2, or open PadBridge with a button combo like Select + Start, from any controller
+- 🔁 **Starts by itself:** back after a restart as soon as Shizuku is running, and started again if it ever stops
+- 🏠 **Thor buttons as usual:** Back, Home, Recents and volume keep working while PadBridge holds the Thor's controls, in any handle style
+- 📳 **Rumble, battery and speed:** games' rumble reaches your controllers at the strength the game asks for, and each card shows battery and how fast a controller reports
 
 ---
 
@@ -29,10 +31,11 @@ PadBridge bridges the Thor's controls and your controllers onto steady player co
 - 🔄 **Updates:** check, see what's new, and install from Settings, or reinstall the current release
 
 ## 📜 Release history
-- **1.1:** faster input, button mapping per controller and per game, hotkeys, starts by itself after a restart
-- **1.0:** first release: the Thor's controls and your controllers as fixed players, up to 8, with rumble, per-controller settings and battery
+- **1.0:** first release: the Thor's controls and your controllers as fixed players, up to 8, with fast input, button mapping, game profiles, hotkeys, rumble, battery, and starting by itself
 
 ## 📲 Install
-Already have PadBridge? It tells you 1.1 is out, or open Settings > **Check for updates**. Your settings and emulator mappings stay as they are.
-
 New to PadBridge? Download `PadBridge.apk` below, open it on the Thor to install, then open PadBridge and follow the setup steps (it needs [Shizuku](https://github.com/RikkaApps/Shizuku/releases/latest)).
+
+Already have an earlier 1.0? Open Settings > Updates > **Reinstall**, or install the download over it. Your settings and emulator mappings stay as they are.
+
+Later updates: PadBridge tells you when a new version is out, or open Settings > **Check for updates**.
