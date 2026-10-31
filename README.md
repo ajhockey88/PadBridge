@@ -1,4 +1,4 @@
-<p align="center"><img src="docs/logo.png" width="160" alt="PadBridge logo: two controllers, Player 1 and Player 2, joined by a bridge"></p>
+<p align="center"><img src="docs/logo.png" width="160" alt="PadBridge logo: the Thor linked to player slots 1, 2 and 3, each holding a controller, and an open slot for more"></p>
 
 # PadBridge
 
