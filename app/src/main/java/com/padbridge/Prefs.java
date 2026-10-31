@@ -18,6 +18,7 @@ final class Prefs {
     static final String KEY_STYLE = "style";
     static final String KEY_AUTO_START = "auto_start";
     static final String KEY_BOTH_SCREENS = "both_screens";
+    static final String KEY_ANNOUNCE = "announce";
     static final String KEY_SWAP_SCREENS = "swap_screens";
     private static final String KEY_PINS = "pins", KEY_NINTENDO = "nintendo", KEY_BUILTIN = "builtin",
             KEY_KNOWN = "known", KEY_PADS = "pads", KEY_PROFILES = "profiles", KEY_HOTKEYS = "hotkeys";
@@ -166,6 +167,7 @@ final class Prefs {
         for (Iterator<String> it = n.keys(); it.hasNext(); ) keys.add(it.next());
         c.nintendo.addAll(keys);
         c.builtin = builtin();
+        c.announce = sp.getBoolean(KEY_ANNOUNCE, true);
         JSONObject pads = object(KEY_PADS);
         for (Iterator<String> it = pads.keys(); it.hasNext(); ) {
             String k = it.next();

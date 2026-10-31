@@ -76,9 +76,12 @@ final class Updater {
                 JSONObject release = new JSONObject(readAll(open(LATEST)));
                 String tag = release.optString("tag_name", "");
                 String latest = tag.startsWith("v") ? tag.substring(1) : tag;
-                String mine = context.getPackageManager().getPackageInfo(context.getPackageName(), 0).versionName;
+                android.content.pm.PackageInfo info = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
+                String mine = info.versionName;
                 int cmp = compareVersions(latest, mine);
-                if (cmp < 0 || (cmp == 0 && !reinstall)) {
+                // The same version, published again after this copy was installed: a new build of it.
+                boolean newBuild = cmp == 0 && published(release) > info.lastUpdateTime + 60000;
+                if (cmp < 0 || (cmp == 0 && !reinstall && !newBuild)) {
                     post("PadBridge " + mine + " is up to date.", true);
                     return;
                 }
@@ -105,7 +108,8 @@ final class Updater {
                     }
                 }
                 final Release r = new Release(latest, mine, notes, url, size);
-                post(cmp == 0 ? "Ready to reinstall PadBridge " + latest + "."
+                post(newBuild && !reinstall ? "A new build of PadBridge " + latest + " is out."
+                        : cmp == 0 ? "Ready to reinstall PadBridge " + latest + "."
                         : "PadBridge " + latest + " is available.", true);
                 main.post(new Runnable() {
                     @Override public void run() { listener.onUpdateAvailable(r); }
@@ -275,6 +279,17 @@ final class Updater {
         byte[] buf = new byte[64 * 1024];
         int n;
         while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
+    }
+
+    /** When a release was published (ms), or 0 if unknown. */
+    private static long published(JSONObject release) {
+        try {
+            java.text.SimpleDateFormat f = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.US);
+            f.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+            return f.parse(release.optString("published_at", "")).getTime();
+        } catch (Exception e) {
+            return 0;
+        }
     }
 
     /** Compares dotted versions like 1.10 and 1.9 by number. */

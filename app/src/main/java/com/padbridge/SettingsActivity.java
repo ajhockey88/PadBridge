@@ -134,9 +134,11 @@ public class SettingsActivity extends Activity {
     /** For screenshots: opens on a given tab. */
     static void openOn(int which) { tab = which; }
 
+    /** "1.0 (build 10)": the build number tells two builds of one version apart. */
     private String versionName() {
         try {
-            return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+            android.content.pm.PackageInfo i = getPackageManager().getPackageInfo(getPackageName(), 0);
+            return i.versionName + " (build " + i.versionCode + ")";
         } catch (Exception e) {
             return "";
         }
@@ -158,6 +160,9 @@ public class SettingsActivity extends Activity {
                 modeSection();
                 playersSlider();
                 styleSection();
+                toggle("Which player am I?", "A controller buzzes once per player number when it connects or "
+                        + "changes player, and lights up in its player's color where it can",
+                        Prefs.KEY_ANNOUNCE, new Prefs(this).raw().getBoolean(Prefs.KEY_ANNOUNCE, true), true);
                 toggle("Start by itself", "Back on after a restart as soon as Shizuku is running, and started again "
                         + "if it ever stops", Prefs.KEY_AUTO_START, prefs.autoStart(), false);
                 restartNote();

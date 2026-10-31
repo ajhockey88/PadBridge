@@ -43,6 +43,8 @@ final class PhysicalPad {
     /** The last button pressed (a PadState button, for press-to-remap) and a count of presses. */
     volatile int lastPressed = -1, pressSeq;
     private long prevButtons;
+    /** The player it last showed (buzzed and lit) for "Which player am I?", 0 for none yet. */
+    int announced;
     /** It turned down a rumble effect. */
     volatile boolean cantRumble;
     private boolean monotonic;

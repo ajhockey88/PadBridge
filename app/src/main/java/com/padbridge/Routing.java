@@ -160,6 +160,8 @@ final class Routing {
         final Map<String, PadSettings> pads = new HashMap<>();
         /** Games' own settings, by package name. */
         final Map<String, Profile> profiles = new HashMap<>();
+        /** "Which player am I?": a controller buzzes its player number when it gets a player. */
+        boolean announce = true;
         /** Hotkeys: action (Hotkeys.ACTIONS) to combo id, for those switched on. */
         final Map<String, String> hotkeys = new HashMap<>();
 
@@ -190,6 +192,7 @@ final class Routing {
             JSONObject hk = new JSONObject();
             for (Map.Entry<String, String> e : hotkeys.entrySet()) hk.put(e.getKey(), e.getValue());
             o.put("hotkeys", hk);
+            o.put("announce", announce);
             return o;
         }
 
@@ -212,6 +215,7 @@ final class Routing {
                 JSONArray n = o.optJSONArray("nintendo");
                 for (int i = 0; n != null && i < n.length(); i++) c.nintendo.add(n.getString(i));
                 c.builtin = o.optString("builtin", "");
+                c.announce = o.optBoolean("announce", true);
                 JSONObject ps = o.optJSONObject("pads");
                 JSONArray keys = ps != null ? ps.names() : null;
                 for (int i = 0; keys != null && i < keys.length(); i++) {

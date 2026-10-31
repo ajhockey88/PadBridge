@@ -6,6 +6,7 @@
 - 🎛️ **Button mapping per controller:** swap any buttons or turn one off, for one controller only. Tap **Remap** and just press the button you want to change
 - 🎯 **Game profiles:** give a game or emulator its own Player 1 and button map. They switch on by themselves while it's in front
 - ⌨️ **Hotkeys:** Home, Back, swap Players 1 and 2, or open PadBridge with a button combo like Select + Start, from any controller
+- 💡 **Which player am I?:** a controller buzzes once per player number when it connects or changes player, and DualSense, DualShock 4, Switch Pro and Xbox 360 lights show its player where Android allows it
 - 🔁 **Starts by itself:** back after a restart as soon as Shizuku is running, and started again if it ever stops
 - 🏠 **Thor buttons as usual:** Back, Home, Recents and volume keep working while PadBridge holds the Thor's controls, in any handle style
 - 📳 **Rumble, battery and speed:** games' rumble reaches your controllers at the strength the game asks for, and each card shows battery and how fast a controller reports
@@ -22,6 +23,7 @@ PadBridge bridges the Thor's controls and your controllers onto steady player co
 - 🎛️ **Per-controller settings:** button mapping, rumble strength, stick deadzone, invert right stick and Nintendo layout
 - 🎯 **Game profiles:** each game's own Player 1 and buttons, on by themselves while it's in front
 - ⌨️ **Hotkeys:** button combos for Home, Back, swapping players and opening PadBridge
+- 💡 **Which player am I?:** each controller buzzes (and lights) its player number
 - 📳 **Rumble:** games' rumble reaches your controllers, and the Thor's motor for its own controls
 - 🔋 **Battery:** each controller's battery on its card, with a notice when one runs low
 - ⚡ **Speed readout:** how often each controller reports, and how little PadBridge adds
@@ -31,11 +33,11 @@ PadBridge bridges the Thor's controls and your controllers onto steady player co
 - 🔄 **Updates:** check, see what's new, and install from Settings, or reinstall the current release
 
 ## 📜 Release history
-- **1.0:** first release: the Thor's controls and your controllers as fixed players, up to 8, with fast input, button mapping, game profiles, hotkeys, rumble, battery, and starting by itself
+- **1.0:** first release: the Thor's controls and your controllers as fixed players, up to 8, with fast input, button mapping, game profiles, hotkeys, player buzz and lights, rumble, battery, and starting by itself
 
 ## 📲 Install
 New to PadBridge? Download `PadBridge.apk` below, open it on the Thor to install, then open PadBridge and follow the setup steps (it needs [Shizuku](https://github.com/RikkaApps/Shizuku/releases/latest)).
 
-Already have an earlier 1.0? Open Settings > Updates > **Reinstall**, or install the download over it. Your settings and emulator mappings stay as they are.
+Already have an earlier 1.0? Open Settings > Updates > **Check for updates** (or **Reinstall**), or install the download over it. Your settings and emulator mappings stay as they are.
 
 Later updates: PadBridge tells you when a new version is out, or open Settings > **Check for updates**.

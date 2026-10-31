@@ -29,7 +29,7 @@ import org.json.JSONObject;
  */
 public final class Engine implements PhysicalPad.Listener, VirtualPads.Listener {
     /** Bumped when the engine changes; the app restarts an engine that doesn't match. */
-    static final int VERSION = 11;
+    static final int VERSION = 12;
     /** struct input_event: 24 bytes with 64-bit timestamps, 16 with 32-bit ones. */
     static final int EVENT_SIZE = System.getProperty("os.arch", "").contains("64") ? 24 : 16;
     private static final int BITS_PER_WORD = EVENT_SIZE == 24 ? 64 : 32;
@@ -322,10 +322,45 @@ public final class Engine implements PhysicalPad.Listener, VirtualPads.Listener 
                 else log(p.dev.name + ": " + p.error);
             } else if (p.player <= 0 && p.isOpen()) {
                 p.close();
+                p.announced = 0;
                 log("gave " + p.dev.name + " back to Android");
             }
         }
+        for (PhysicalPad p : order) if (p.isOpen() && p.player > 0 && p.announced != p.player) announce(p);
         for (int player = 1; player <= players.count(); player++) refresh(player);
+    }
+
+    private final java.util.concurrent.ExecutorService announcer = java.util.concurrent.Executors.newSingleThreadExecutor();
+
+    /**
+     * "Which player am I?": a controller that got a player (by connecting, or a swap) buzzes once
+     * per player number and, where it can, lights up in the player's color. The Thor's own
+     * controls only buzz when their player changes, not every time PadBridge starts.
+     */
+    private void announce(final PhysicalPad p) {
+        boolean first = p.announced == 0;
+        final int player = p.announced = p.player;
+        final boolean lit = Lights.show(p.dev.sysfs, player);
+        final int strength = cfg.pad(p.dev.key()).rumble;
+        if (!cfg.announce || strength <= 0 || (first && p.builtin)) {
+            if (lit) log(p.dev.name + " lit for player " + player);
+            return;
+        }
+        log(p.dev.name + ": buzzing player " + player + (lit ? ", lit" : ""));
+        announcer.execute(new Runnable() {
+            @Override public void run() {
+                int m = Math.round(0xffff * Math.max(40, strength) / 100f);
+                for (int i = 0; i < player && p.isOpen() && p.player == player; i++) {
+                    if (!p.rumble(true, m, m, 140)) {
+                        if (!p.builtin) return; // no rumble on this one
+                        exec("cmd", "vibrator_manager", "synced", "oneshot", "-a", "140",
+                                String.valueOf(Math.round(255 * Math.max(40, strength) / 100f)));
+                    }
+                    sleep(320);
+                }
+                p.rumble(false, 0, 0, 0);
+            }
+        });
     }
 
     private List<PhysicalPad> ordered() {
