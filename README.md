@@ -1,37 +1,37 @@
-<p align="center"><img src="docs/logo.png" width="160" alt="PadBridge logo: the Thor linked to player slots 1, 2 and 3, each holding a controller, and an open slot for more"></p>
-
-# PadBridge
+# <img src="app/src/main/res/mipmap-xxxhdpi/ic_launcher.png" width="48" align="center" alt="PadBridge icon"> PadBridge
 
 [![Downloads](https://img.shields.io/github/downloads/ajhockey88/PadBridge/total?style=for-the-badge&logo=github&label=Downloads&color=yellowgreen)](https://github.com/ajhockey88/PadBridge/releases)
 [![Latest release](https://img.shields.io/github/v/release/ajhockey88/PadBridge?style=for-the-badge&logo=github&label=Latest%20release&color=blue)](https://github.com/ajhockey88/PadBridge/releases/latest)
 
-🎮 Use the AYN Thor's own controls and up to seven external controllers at the same time, with fixed players.
+🎮 Connect your controllers to the AYN Thor once, and your emulators keep their mappings.
 
-🔁 Tired of remapping your emulators every time you connect a controller to the Thor? PadBridge
-takes over the Thor's controls and your controllers and gives games steady player controllers,
-**PadBridge Player 1**, **PadBridge Player 2** and so on up to Player 8, which look the same every
-time. Map them once in each emulator and you're done, whichever controllers you pick up.
+🌉 PadBridge bridges the Thor's own controls and up to seven Bluetooth or USB controllers onto
+steady player controllers, **PadBridge Player 1**, **Player 2** and so on up to Player 8, which
+games see the same way every time. Map them once in each emulator and you're done, whichever
+controllers you pick up, for local multiplayer, split screen or streaming.
 
 ## 📸 Screens
 
+Everything happens on the Thor's bottom screen (1240 × 1080), with the controller test on the
+top screen.
+
 | 🎮 Players, on the bottom screen | 👆 Who is Player 1 |
 |---|---|
-| <img src="docs/screenshots/main.png" width="400" alt="Main screen: Player 1 with the Thor's controls, Player 2 with an Xbox controller, and the menu pill on top"> | <img src="docs/screenshots/mode-menu.png" width="400" alt="Mode menu: Thor first, Controller first, or Both Player 1"> |
+| <img src="docs/screenshots/main.png?v=1.0" width="400" alt="Main screen: Player 1 with the Thor's controls, Player 2 with an Xbox controller, and the menu pill on top"> | <img src="docs/screenshots/mode-menu.png?v=1.0" width="400" alt="Mode menu: Thor first, Controller first, or Both Player 1"> |
 | 🕹️ A controller's menu | 🤝 Both Player 1 |
-| <img src="docs/screenshots/controller-menu.png" width="400" alt="A controller's menu: always Player 1 to 4, automatic, leave it to Android, Nintendo layout, Thor's own controls"> | <img src="docs/screenshots/shared.png" width="400" alt="Both Player 1: the Thor and an Xbox controller on Player 1, an 8BitDo controller on Player 2"> |
+| <img src="docs/screenshots/controller-menu.png?v=1.0" width="400" alt="A controller's menu: always Player 1 to 4, automatic, leave it to Android, Nintendo layout, Thor's own controls"> | <img src="docs/screenshots/shared.png?v=1.0" width="400" alt="Both Player 1: the Thor and an Xbox controller on Player 1, an 8BitDo controller on Player 2"> |
 | 👥 Four players | 🎉 Up to eight |
-| <img src="docs/screenshots/four.png" width="400" alt="Four players: the Thor's controls, an Xbox, an 8BitDo and a DualSense controller, one per card"> | <img src="docs/screenshots/eight.png" width="400" alt="Eight players in two rows of four, six of them with a controller"> |
+| <img src="docs/screenshots/four.png?v=1.0" width="400" alt="Four players: the Thor's controls, an Xbox, an 8BitDo and a DualSense controller, one per card"> | <img src="docs/screenshots/eight.png?v=1.0" width="400" alt="Eight players in two rows of four, six of them with a controller"> |
 | 🔁 Swapping with more than two | 🧪 Controller test (top screen) |
-| <img src="docs/screenshots/swap.png" width="400" alt="Swap with four players: Player 1 is picked, tap the player to swap with"> | <img src="docs/screenshots/test.png" width="400" alt="Controller test on the top screen with Player 1 and Player 2 drawn live"> |
+| <img src="docs/screenshots/swap.png?v=1.0" width="400" alt="Swap with four players: Player 1 is picked, tap the player to swap with"> | <img src="docs/screenshots/test.png?v=1.0" width="400" alt="Controller test on the top screen with Player 1 and Player 2 drawn live"> |
 | 🚀 First-run setup | ⚙️ Settings |
-| <img src="docs/screenshots/setup.png" width="400" alt="Setup steps: install Shizuku, start it, allow PadBridge"> | <img src="docs/screenshots/settings.png" width="400" alt="Settings, Players tab: who is Player 1, players always ready, player pad type"> |
+| <img src="docs/screenshots/setup.png?v=1.0" width="400" alt="Setup steps: install Shizuku, start it, allow PadBridge"> | <img src="docs/screenshots/settings.png?v=1.0" width="400" alt="Settings, Players tab: who is Player 1, players always ready, player pad type"> |
 | 🕹️ Controllers | 🎛️ A controller's settings |
-| <img src="docs/screenshots/controllers.png" width="400" alt="Settings, Controllers tab: each controller seen, with its player, rumble and stick settings, Thor's own controls and Forget"> | <img src="docs/screenshots/controller-settings.png" width="400" alt="A controller's settings: how quickly it reports, rumble strength with a test button, stick deadzone, invert right stick, Nintendo layout"> |
+| <img src="docs/screenshots/controllers.png?v=1.0" width="400" alt="Settings, Controllers tab: each controller seen, with its player, rumble and stick settings, Thor's own controls and Forget"> | <img src="docs/screenshots/controller-settings.png?v=1.0" width="400" alt="A controller's settings: how quickly it reports, rumble strength with a test button, stick deadzone, invert right stick, Nintendo layout"> |
 | ℹ️ About | |
-| <img src="docs/screenshots/about.png" width="400" alt="Settings, About tab: version, the MIT license and thanks"> | |
+| <img src="docs/screenshots/about.png?v=1.0" width="400" alt="Settings, About tab: version, the MIT license and thanks"> | |
 
-The screenshots are drawn from the app's own code with made-up controllers; pictures from a
-Thor will replace them.
+The screenshots are drawn from PadBridge's own code with made-up controllers.
 
 ## 👆 Using it
 
@@ -68,23 +68,35 @@ The menu along the top has the mode, 🔁 Swap, 🧪 Test, ⚙️ Settings and �
 button works with a controller too.
 
 **In your emulators:** map **PadBridge Player 1** to port 1, **PadBridge Player 2** to port 2,
-and so on for as many players as the game takes, once. The real controllers PadBridge took over stay silent, so they don't claim a port of
-their own.
+and so on for as many players as the game takes, once. The real controllers PadBridge took over
+stay silent, so they don't claim a port of their own.
 
 ## ⚙️ Settings
 
-- 🎮 **Players:** who is Player 1, how many player pads are always ready (2 by default, so
-  Player 2 is there before a friend connects; up to 8), and the player pad type: **Standard** Android
-  controllers, or **Xbox 360** for games that only know Xbox controllers.
+- 🎮 **Who is Player 1:** Thor first, Controller first or Both Player 1, as in the menu
+- 👥 **Players always ready** (2 by default, up to 8): player pads games see even before a
+  controller joins, so Player 2 is there before a friend connects
+- 🕹️ **Player pad type:** **Standard** Android controllers, or **Xbox 360** for games that only
+  know Xbox controllers
 - 🔌 **Start with Shizuku** (on by default): PadBridge comes back on by itself when Shizuku
-  starts, for example after a restart.
-- 🖥️ **Screens:** **Test on the other screen** and **Swap screens**.
-- 🕹️ **Controllers:** every controller PadBridge has seen, with its player, Nintendo layout,
-  Thor controls (to mark the Thor's own controls) and Forget.
+  starts, for example after a restart
+- 🖥️ **Test on the other screen** and **Swap screens**
+- 🕹️ **Controllers:** every controller PadBridge has seen, remembered by its Bluetooth address
+  (or maker, model and name), with its player, **Rumble, sticks and buttons**, Thor controls (to
+  mark the Thor's own controls) and **Forget**
+- 🎛️ **Rumble, sticks and buttons**, for each controller: rumble strength (or off) with a 📳
+  Test button, stick deadzone for worn sticks that drift, invert the right stick up/down, and
+  Nintendo layout (swaps A/B and X/Y)
 - 📳 **Haptics:** a feel (Off, Tick, Click, Heavy, Double or Buzz) and strength for each action,
-  with a preview as you change them.
-- 🔄 **Updates:** **Check for updates** and **Reinstall**, as in ThorPad.
-- ℹ️ **About:** the version, the license and thanks.
+  with a preview as you change them
+- 🔄 **Check for updates:** finds a newer PadBridge release on GitHub and shows what's new in
+  every version since yours. Tap **Update** to download and install it, or **Not now**. With
+  Shizuku it installs on its own; without it, Android shows its install prompt. PadBridge also
+  checks quietly each time it opens and only speaks up when there's a newer version; **Not now**
+  stops it asking about that version.
+- 🔁 **Reinstall:** downloads the latest release and installs it again, for when a release's APK
+  was replaced
+- ℹ️ **About:** the version, the license and thanks
 
 Long-press a heading in Settings to save diagnostics to Download (PadBridge's log, the input
 devices and screenshots), for bug reports.
@@ -92,16 +104,20 @@ devices and screenshots), for bug reports.
 ## 📲 Install
 
 1. Copy `PadBridge.apk` to the Thor and open it to install.
-2. Install [Shizuku](https://github.com/RikkaApps/Shizuku/releases/latest) and start it (with
-   Wireless debugging).
-3. Open PadBridge and tap **Allow** when Shizuku asks. PadBridge turns on right away.
-4. Connect a controller. It shows up on its player's card.
+2. Open PadBridge. The setup steps walk you through Shizuku, each with a button that does the
+   work:
+   - **Install Shizuku:** get [Shizuku](https://github.com/RikkaApps/Shizuku/releases/latest).
+   - **Start Shizuku:** turn on Wireless debugging and tap **Start** in Shizuku. Shizuku has to be
+     started again after each reboot, and PadBridge comes back with it.
+   - **Allow PadBridge:** one tap in Shizuku's prompt. PadBridge turns on right away.
+3. Pair your controllers in Android's Bluetooth settings as usual, or plug them in. Each one
+   lands on the next free player within a second, and PadBridge remembers it.
+4. In each emulator, map **PadBridge Player 1** to port 1, **Player 2** to port 2 and so on, once.
 
-After a restart, start Shizuku again and PadBridge comes back by itself.
-
-🔄 **Updating:** PadBridge checks for a new version when it opens, or tap **Check for updates** in
-Settings > Updates. You can also install the newest `PadBridge.apk` from
-[Releases](https://github.com/ajhockey88/PadBridge/releases) over the old one.
+🔄 **Updating:** PadBridge tells you when it opens if a new version is out. You can also tap
+**Check for updates** in Settings > Updates, or install the newest `PadBridge.apk` from
+[Releases](https://github.com/ajhockey88/PadBridge/releases) over the old one. Your settings and
+controllers are kept.
 
 ## 🛠️ How it works
 
@@ -127,8 +143,14 @@ the controller's event times on the same clock as the engine, for the speed read
 The app and the engine talk through two small files in PadBridge's own folder: the app writes
 the settings, the engine writes what it's doing.
 
-🔒 PadBridge only goes online to check GitHub for updates (when it opens, and from Settings).
-It reads controller input only to pass it on, and never stores or sends it anywhere.
+Check for updates reads `releases/latest` from the GitHub API, compares its tag with the
+installed version, shows the release notes, and on **Update** downloads the release's `.apk` and
+installs it with `pm install` through Shizuku, or with Android's package installer when Shizuku
+isn't allowed.
+
+🔒 PadBridge only goes online to check its GitHub releases (once each time it opens, and when you
+tap **Check for updates**) and to download a new APK when you choose to update. Nothing else is
+sent anywhere. It reads controller input only to pass it on, and never stores or sends it.
 
 ## 🙏 Credits
 
@@ -138,19 +160,13 @@ PadBridge is its own code, written for the Thor: it uses Shizuku and Android's `
 instead of the Odin firmware's privileged service, and adds stable players for two or more
 controllers.
 
-## 📄 License
-
-PadBridge is under the [MIT License](LICENSE): use, copy, change and share it freely, keeping the
-notice. It talks to Shizuku with Shizuku's API classes (Apache License 2.0). Settings > About
-shows the license in the app.
-
 ## 🏗️ Building
 
 `./build.sh` builds `build/PadBridge.apk` with Ubuntu's packaged Android tools (see the script
 header); it downloads the two jars it compiles against from Maven Central. With `clang` and
 `lld` installed it also rebuilds the native helper; otherwise it uses the copy in
-`app/src/main/jniLibs`. The project also has
-standard Gradle files, so it can be opened and built in Android Studio.
+`app/src/main/jniLibs`. The project also has standard Gradle files, so it can be opened and
+built in Android Studio.
 
 The engine's logic (finding controllers, reading them, picking players, what the player pads
 report) can be checked on a desktop JVM, no Android needed:
@@ -171,3 +187,9 @@ Bump `versionCode` and `versionName` in `app/build.gradle` and `AndroidManifest.
 with the usual key. Then commit `release/PadBridge.apk` and `release/notes.md` on top of `main`
 and push that commit as a `release/v1.0` branch (not to `main`). The Release workflow tags it
 `v1.0`, publishes the release, and deletes the branch; the app's update check finds it.
+
+## 📄 License
+
+PadBridge is under the [MIT License](LICENSE): use, copy, change and share it freely, keeping the
+notice. It talks to Shizuku with Shizuku's API classes (Apache License 2.0). Settings > About
+shows the license in the app.
