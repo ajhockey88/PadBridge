@@ -17,6 +17,7 @@ public class EngineTest {
         triggersLookTheSame();
         routesPlayers();
         controllerSettings();
+        buttonMaps();
         playerPadsReportChanges();
         thorSystemKeys();
         readsBatteries();
@@ -248,6 +249,51 @@ public class EngineTest {
         check("deadzone keeps the edge full", near(out.axes[PadState.LX], 1f));
     }
 
+    static void buttonMaps() throws Exception {
+        Routing.PadSettings ps = new Routing.PadSettings();
+        ps.setMapped(PadState.A, PadState.B);
+        ps.setMapped(PadState.B, PadState.A);
+        ps.setMapped(PadState.SELECT, Routing.PadSettings.UNMAPPED);
+        ps.setMapped(PadState.L2, PadState.R2);
+        ps.setMapped(PadState.R2, PadState.L2);
+        ps.setMapped(PadState.Y, PadState.R2);
+        check("map counts its changes", ps.remapped() == 6 && !ps.isDefault());
+        Routing.Config c = new Routing.Config();
+        c.pads.put("k", ps);
+        Routing.PadSettings got = Routing.Config.fromJson(c.toJson().toString()).pad("k");
+        check("map survives JSON", got.mapped(PadState.A) == PadState.B && got.mapped(PadState.SELECT) == -1
+                && got.mapped(PadState.X) == PadState.X && got.remapped() == 6);
+
+        PadMapper m = new PadMapper(devices().get(1)); // Xbox over Bluetooth: analog triggers on BRAKE/GAS
+        m.apply(false, got);
+        PadState out = new PadState();
+        m.handle(Evdev.EV_KEY, Evdev.BTN_SOUTH, 1);
+        m.handle(Evdev.EV_KEY, Evdev.BTN_SELECT, 1);
+        m.normalizedInto(out);
+        check("A presses B", out.pressed(PadState.B) && !out.pressed(PadState.A));
+        check("Select turned off", !out.pressed(PadState.SELECT));
+        m.handle(Evdev.EV_KEY, Evdev.BTN_SOUTH, 0);
+        m.handle(Evdev.EV_KEY, Evdev.BTN_SELECT, 0);
+        int[] brake = devices().get(1).abs.get(Evdev.ABS_BRAKE);
+        m.handle(Evdev.EV_ABS, Evdev.ABS_BRAKE, brake[0] + (brake[1] - brake[0]) / 4); // left trigger a quarter in
+        m.normalizedInto(out);
+        check("analog left trigger moves to the right one", near(out.axes[PadState.RT], 0.25f) && out.axes[PadState.LT] == 0f);
+        check("a light pull doesn't press the button", !out.pressed(PadState.R2) && !out.pressed(PadState.L2));
+        m.handle(Evdev.EV_KEY, Evdev.BTN_WEST, 1); // Y, mapped to the right trigger
+        m.normalizedInto(out);
+        check("a button mapped to a trigger pulls it fully", out.pressed(PadState.R2) && near(out.axes[PadState.RT], 1f));
+
+        Routing.PadSettings back = new Routing.PadSettings();
+        back.setMapped(PadState.A, PadState.B);
+        back.setMapped(PadState.A, PadState.A);
+        check("mapping back to itself clears the map", back.map == null && back.isDefault());
+        PadMapper plain = new PadMapper(devices().get(1));
+        plain.apply(false, back);
+        plain.handle(Evdev.EV_ABS, Evdev.ABS_BRAKE, brake[0] + (brake[1] - brake[0]) / 4);
+        plain.normalizedInto(out);
+        check("no map: trigger stays put", near(out.axes[PadState.LT], 0.25f));
+    }
+
     static void playerPadsReportChanges() throws Exception {
         PlayerPad pad = new PlayerPad(2, Routing.STANDARD);
         String json = pad.registerJson();
@@ -271,6 +317,19 @@ public class EngineTest {
         s.axes[PadState.LT] = 1f;
         check("xbox style: left trigger on Z", has(xbox.diff(s), Evdev.EV_ABS, Evdev.ABS_Z, PlayerPad.TRIGGER_MAX));
         new org.json.JSONObject(xbox.registerJson());
+
+        // The direct /dev/uinput pad: the same buttons and axes as the uinput tool's.
+        int[] axes = pad.axes();
+        check("direct pad: 8 axes", axes.length == 40 && axes[0] == Evdev.ABS_X && axes[35] == Evdev.ABS_HAT0Y);
+        check("direct pad: 29 buttons", PlayerPad.keys().length == 29);
+        check("direct pad: own ids", pad.vendor() == 0x1209 && pad.product() == 0x5044 && xbox.vendor() == 0x045e);
+        int[] buf = new int[PlayerPad.MAX_EVENTS];
+        PlayerPad fresh = new PlayerPad(1, Routing.STANDARD);
+        s.clear();
+        for (int b = 0; b < PadState.BUTTONS + PadState.EXTRA_COUNT; b++) s.set(b, true);
+        for (int a = 0; a < PadState.AXES; a++) s.axes[a] = 1f;
+        int n = fresh.diff(s, buf);
+        check("every change fits one frame", n > 0 && n <= PlayerPad.MAX_EVENTS && n % 3 == 0);
     }
 
     static boolean has(int[] ev, int type, int code, int value) {

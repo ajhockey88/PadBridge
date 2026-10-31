@@ -16,6 +16,8 @@ final class PadMapper {
     /** Stick deadzone, 0 to 0.3 of the stick's reach. */
     volatile float deadzone;
     volatile boolean invertRy;
+    /** The controller's button map (see Routing.PadSettings.map), or null for none. */
+    volatile int[] map;
 
     final PadState state = new PadState();
     /** Analog triggers seen, so their digital buttons don't fight them. */
@@ -127,6 +129,37 @@ final class PadMapper {
         deadzone(out, PadState.LX, PadState.LY);
         deadzone(out, PadState.RX, PadState.RY);
         if (invertRy) out.axes[PadState.RY] = -out.axes[PadState.RY];
+        int[] m = map;
+        if (m != null) remap(out, m);
+    }
+
+    private static final long STANDARD = (1L << PadState.BUTTONS) - 1;
+
+    /**
+     * Applies a button map. An analog trigger goes where its button goes (L2 mapped to R2
+     * moves the whole trigger), and any other button mapped to a trigger presses it fully.
+     */
+    static void remap(PadState out, int[] m) {
+        long in = out.buttons, res = in & ~STANDARD;
+        float lt = out.axes[PadState.LT], rt = out.axes[PadState.RT], newLt = 0, newRt = 0;
+        for (int b = 0; b < PadState.BUTTONS; b++) {
+            int to = m[b];
+            boolean trigger = b == PadState.L2 || b == PadState.R2;
+            if (trigger) {
+                // Its axis already says how far it's pressed (fully, for a button-only trigger).
+                float v = b == PadState.L2 ? lt : rt;
+                if (to == PadState.L2) newLt = Math.max(newLt, v);
+                else if (to == PadState.R2) newRt = Math.max(newRt, v);
+            }
+            if ((in & (1L << b)) == 0 || to < 0) continue;
+            res |= 1L << to;
+            if (trigger) continue;
+            if (to == PadState.L2) newLt = 1f;
+            else if (to == PadState.R2) newRt = 1f;
+        }
+        out.buttons = res;
+        out.axes[PadState.LT] = newLt;
+        out.axes[PadState.RT] = newRt;
     }
 
     /** Ignores a stick near its center, and scales the rest so the edge is still full. */
@@ -145,6 +178,7 @@ final class PadMapper {
         this.nintendo = nintendo;
         deadzone = s.deadzone / 100f;
         invertRy = s.invertRy;
+        map = s.map == null ? null : s.map.clone();
     }
 
     private static float clamp(float v, float lo, float hi) {

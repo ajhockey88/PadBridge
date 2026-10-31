@@ -34,11 +34,50 @@ final class Routing {
         int deadzone;
         /** Pushing the right stick up looks down, as in flight games. */
         boolean invertRy;
+        /**
+         * Button map: map[b] is what this controller's button b (a PadState button, A to RIGHT)
+         * presses on its player pad, or UNMAPPED for nothing. Null when every button is itself.
+         */
+        int[] map;
+        static final int UNMAPPED = -1;
 
-        boolean isDefault() { return rumble == DEFAULT.rumble && deadzone == 0 && !invertRy; }
+        boolean isDefault() { return rumble == DEFAULT.rumble && deadzone == 0 && !invertRy && map == null; }
+
+        /** What button b presses. */
+        int mapped(int b) { return map == null ? b : map[b]; }
+
+        /** Sets what button b presses; a map back to every button being itself goes away. */
+        void setMapped(int b, int to) {
+            if (map == null) {
+                if (to == b) return;
+                map = identity();
+            }
+            map[b] = to;
+            for (int i = 0; i < map.length; i++) if (map[i] != i) return;
+            map = null;
+        }
+
+        static int[] identity() {
+            int[] m = new int[PadState.BUTTONS];
+            for (int i = 0; i < m.length; i++) m[i] = i;
+            return m;
+        }
+
+        /** Buttons that don't press themselves. */
+        int remapped() {
+            int n = 0;
+            for (int i = 0; map != null && i < map.length; i++) if (map[i] != i) n++;
+            return n;
+        }
 
         JSONObject toJson() throws JSONException {
-            return new JSONObject().put("rumble", rumble).put("deadzone", deadzone).put("invertRy", invertRy);
+            JSONObject o = new JSONObject().put("rumble", rumble).put("deadzone", deadzone).put("invertRy", invertRy);
+            if (map != null) {
+                JSONObject m = new JSONObject();
+                for (int i = 0; i < map.length; i++) if (map[i] != i) m.put(String.valueOf(i), map[i]);
+                o.put("map", m);
+            }
+            return o;
         }
 
         static PadSettings fromJson(JSONObject o) {
@@ -47,6 +86,16 @@ final class Routing {
             s.rumble = Math.max(0, Math.min(100, o.optInt("rumble", s.rumble)));
             s.deadzone = Math.max(0, Math.min(30, o.optInt("deadzone", 0)));
             s.invertRy = o.optBoolean("invertRy", false);
+            JSONObject m = o.optJSONObject("map");
+            JSONArray keys = m != null ? m.names() : null;
+            for (int i = 0; keys != null && i < keys.length(); i++) {
+                try {
+                    int from = Integer.parseInt(keys.optString(i));
+                    int to = m.optInt(keys.optString(i), from);
+                    if (from >= 0 && from < PadState.BUTTONS && to >= UNMAPPED && to < PadState.BUTTONS) s.setMapped(from, to);
+                } catch (NumberFormatException ignored) {
+                }
+            }
             return s;
         }
     }

@@ -29,7 +29,7 @@ import org.json.JSONObject;
  */
 public final class Engine implements PhysicalPad.Listener, VirtualPads.Listener {
     /** Bumped when the engine changes; the app restarts an engine that doesn't match. */
-    static final int VERSION = 9;
+    static final int VERSION = 10;
     /** struct input_event: 24 bytes with 64-bit timestamps, 16 with 32-bit ones. */
     static final int EVENT_SIZE = System.getProperty("os.arch", "").contains("64") ? 24 : 16;
     private static final int BITS_PER_WORD = EVENT_SIZE == 24 ? 64 : 32;
@@ -304,22 +304,28 @@ public final class Engine implements PhysicalPad.Listener, VirtualPads.Listener 
 
     private final java.util.concurrent.ExecutorService motor = java.util.concurrent.Executors.newSingleThreadExecutor();
 
-    /** A game rumbled a player pad: rumble every controller on that player. */
+    /**
+     * A game rumbled a player pad: rumble every controller on that player, as strongly as the
+     * game asked, scaled by each controller's own rumble strength.
+     */
     @Override
-    public void onRumble(int player, final boolean on) {
+    public void onRumble(int player, boolean on, int strong, int weak, int ms) {
         List<PhysicalPad> targets = new ArrayList<>();
         synchronized (this) {
             for (PhysicalPad p : pads.values()) if (p.player == player && p.isOpen()) targets.add(p);
         }
+        final int length = ms > 0 ? Math.min(ms, 5000) : 5000;
         for (PhysicalPad p : targets) {
-            final int strength = cfg.pad(p.dev.key()).rumble;
+            int strength = cfg.pad(p.dev.key()).rumble;
             if (strength <= 0) continue;
-            if (!p.rumble(on, strength) && p.builtin) {
+            final int s = Math.round(strong * strength / 100f), w = Math.round(weak * strength / 100f);
+            final boolean go = on && (s > 0 || w > 0);
+            if (!p.rumble(go, s, w, length) && p.builtin) {
                 // The Thor's controls have no rumble of their own: use the Thor's motor.
                 motor.execute(new Runnable() {
                     @Override public void run() {
-                        if (on) exec("cmd", "vibrator_manager", "synced", "oneshot", "-a", "5000",
-                                String.valueOf(Math.max(1, Math.round(255 * strength / 100f))));
+                        if (go) exec("cmd", "vibrator_manager", "synced", "oneshot", "-a", String.valueOf(length),
+                                String.valueOf(Math.max(1, Math.min(255, Math.round(255 * Math.max(s, w) / 65535f)))));
                         else exec("cmd", "vibrator_manager", "cancel");
                     }
                 });
@@ -346,6 +352,7 @@ public final class Engine implements PhysicalPad.Listener, VirtualPads.Listener 
             o.put("running", cfg.enabled);
             o.put("players", players.count());
             o.put("style", players.style());
+            o.put("direct", players.direct());
             o.put("error", error);
             JSONArray list = new JSONArray();
             synchronized (this) {
@@ -359,7 +366,7 @@ public final class Engine implements PhysicalPad.Listener, VirtualPads.Listener 
                     d.put("active", p.isOpen());
                     d.put("error", p.error);
                     d.put("intervalMs", Math.round(p.intervalMs * 10) / 10.0);
-                    d.put("addedMs", Math.round(p.addedMs * 100) / 100.0);
+                    d.put("addedMs", Math.round(p.addedMs * 1000) / 1000.0);
                     d.put("cantRumble", p.cantRumble && !p.builtin);
                     Battery b = p.battery;
                     if (b != null) {

@@ -1,5 +1,5 @@
 /*
- * PadBridge's only native code: the evdev calls Java can't make, for the engine.
+ * PadBridge's only native code: the evdev and uinput calls Java can't make, for the engine.
  * Uploading a rumble effect (EVIOCSFF) and setting the event clock (EVIOCSCLOCKID) pass a
  * pointer to a struct, which android.system.Os can't do.
  *
@@ -83,4 +83,87 @@ jint Java_com_padbridge_Native_rumbleErase(JNIEnv *env, jclass cls, jint fd, jin
 jint Java_com_padbridge_Native_monotonicClock(JNIEnv *env, jclass cls, jint fd) {
     int clock = CLOCK_MONOTONIC;
     return (jint) sys3(SYS_ioctl, fd, EVIOCSCLOCKID, (long) &clock);
+}
+
+/*
+ * Player pads made straight on /dev/uinput, so a report goes from the controller to the
+ * player pad in one write, in this process: no `uinput` tool, pipe or JSON in between.
+ */
+
+#define SYS_openat 56
+#define SYS_close 57
+#define SYS_read 63
+#define AT_FDCWD -100
+#define O_RDWR 2
+#define O_CLOEXEC 0x80000
+
+typedef void *jbyteArray;
+/* JNI's GetByteArrayRegion and SetByteArrayRegion: entries 200 and 208 of JNIEnv's table. */
+typedef void (*ByteRegion)(JNIEnv *env, jbyteArray a, jint start, jint len, void *buf);
+#define JNI_FN(env, i) ((ByteRegion) ((void **) *(void ***) (env))[i])
+
+/* Opens /dev/uinput. Returns the fd, or -errno. */
+jint Java_com_padbridge_Native_uinputOpen(JNIEnv *env, jclass cls) {
+    static const char path[] = "/dev/uinput";
+    return (jint) sys3(SYS_openat, AT_FDCWD, (long) path, O_RDWR | O_CLOEXEC);
+}
+
+jint Java_com_padbridge_Native_close(JNIEnv *env, jclass cls, jint fd) {
+    return (jint) sys3(SYS_close, fd, 0, 0);
+}
+
+/* An ioctl that takes a plain int (UI_SET_EVBIT and friends, UI_DEV_CREATE). */
+jint Java_com_padbridge_Native_ioctlValue(JNIEnv *env, jclass cls, jint fd, jint cmd, jint value) {
+    return (jint) sys3(SYS_ioctl, fd, (unsigned) cmd, value);
+}
+
+/* An ioctl on a struct, passed in (and back out of) `buf`. Structs up to 256 bytes. */
+jint Java_com_padbridge_Native_ioctlStruct(JNIEnv *env, jclass cls, jint fd, jint cmd, jbyteArray buf, jint len) {
+    long s[32];
+    if (len < 0 || len > (jint) sizeof s) return -22;
+    JNI_FN(env, 200)(env, buf, 0, len, s);
+    long r = sys3(SYS_ioctl, fd, (unsigned) cmd, (long) s);
+    JNI_FN(env, 208)(env, buf, 0, len, s);
+    return (jint) r;
+}
+
+/* Writes `len` bytes of input events. Returns bytes written, or -errno. */
+jint Java_com_padbridge_Native_write(JNIEnv *env, jclass cls, jint fd, jbyteArray buf, jint len) {
+    long s[256];
+    if (len < 0 || len > (jint) sizeof s) return -22;
+    JNI_FN(env, 200)(env, buf, 0, len, s);
+    return (jint) sys3(SYS_write, fd, (long) s, len);
+}
+
+static long sys5(long nr, long a, long b, long c, long d, long e) {
+    register long x0 __asm__("x0") = a;
+    register long x1 __asm__("x1") = b;
+    register long x2 __asm__("x2") = c;
+    register long x3 __asm__("x3") = d;
+    register long x4 __asm__("x4") = e;
+    register long x8 __asm__("x8") = nr;
+    __asm__ volatile("svc 0" : "+r"(x0) : "r"(x1), "r"(x2), "r"(x3), "r"(x4), "r"(x8) : "memory");
+    return x0;
+}
+
+#define SYS_ppoll 73
+#define POLLIN 1
+
+struct pollfd { int fd; short events, revents; };
+struct timespec { long sec, nsec; };
+
+/*
+ * Reads up to `len` bytes, waiting at most `ms` for them, so the reading thread can notice
+ * when its pad is being removed. Returns bytes read, 0 after waiting, or -errno.
+ */
+jint Java_com_padbridge_Native_read(JNIEnv *env, jclass cls, jint fd, jbyteArray buf, jint len, jint ms) {
+    long s[64];
+    if (len > (jint) sizeof s) len = sizeof s;
+    struct pollfd p = {fd, POLLIN, 0};
+    struct timespec t = {ms / 1000, (ms % 1000) * 1000000L};
+    long r = sys5(SYS_ppoll, (long) &p, 1, (long) &t, 0, 0);
+    if (r <= 0) return r == -4 ? 0 : (jint) r; /* -EINTR: try again */
+    r = sys3(SYS_read, fd, (long) s, len);
+    if (r > 0) JNI_FN(env, 208)(env, buf, 0, (jint) r, s);
+    return (jint) r;
 }

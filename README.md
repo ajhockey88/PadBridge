@@ -53,11 +53,17 @@ Once it's on, you can close PadBridge: it keeps running.
   there whatever the mode), leave it to Android, open its settings, or mark it as the Thor's own
   controls if PadBridge didn't spot them.
 - 🎛️ **A controller's settings:** rumble strength (or off) with a 📳 Test button, stick deadzone
-  for worn sticks that drift, invert the right stick up/down, and Nintendo layout (swaps A/B and
-  X/Y).
+  for worn sticks that drift, invert the right stick up/down, Nintendo layout (swaps A/B and
+  X/Y), and its own button map.
+- 🎛️ **Button mapping:** in a controller's settings, tap **Remap** to choose what each of its
+  buttons presses on its player pad, or turn a button off. It's per controller, so a friend's pad
+  can have A and B swapped while the Thor's controls stay as they are. An analog trigger moves
+  with its button. The Thor's Home, Back and volume buttons always stay Android's.
 - ⚡ **Speed:** each controller's card shows how often it reports (for example ⚡ 8 ms, about 125
-  times a second) and how long PadBridge takes to pass a report on (usually well under a
-  millisecond). The time a wireless controller takes to reach the Thor can't be seen from
+  times a second) and how long PadBridge takes to pass a report on, timed from the moment the
+  Thor's kernel got the report to the moment the player pad has it, to a hundredth of a
+  millisecond. PadBridge writes reports straight to the player pads on `/dev/uinput`, from the
+  thread that read them, so there's nothing in between to wait for. The time a wireless controller takes to reach the Thor can't be seen from
   software, but a slow report rate is a good sign of a laggy connection.
 - 🔋 **Battery:** each controller's card shows its battery (🔌 while charging), and the Thor
   gives a notice when one drops to 15%, so it doesn't die mid-game. Shown for controllers whose
@@ -66,6 +72,12 @@ Once it's on, you can close PadBridge: it keeps running.
   Thor's own controls rumble with the Thor's motor.
 - 🧪 **Test** opens the controller test on the top screen: every player pad drawn live, so you
   can check who's who before starting a game.
+
+- 🔁 **Starts by itself:** after a restart PadBridge comes back on its own as soon as Shizuku is
+  running, and if its engine ever stops, it's started again within a few seconds. Shizuku
+  itself has to run first: with root it starts with the Thor; without root it has to be started
+  again after each restart (Start via Wireless debugging), unless your Shizuku version has a
+  Start on boot option. Until it's running, PadBridge shows a notice that opens Shizuku.
 
 The menu along the top has the mode, 🔁 Swap, 🧪 Test, ⚙️ Settings and ✖️ Close. Every
 button works with a controller too.
@@ -81,8 +93,8 @@ stay silent, so they don't claim a port of their own.
   controller joins, so Player 2 is there before a friend connects
 - 🕹️ **Player pad type:** **Standard** Android controllers, or **Xbox 360** for games that only
   know Xbox controllers
-- 🔌 **Start with Shizuku** (on by default): PadBridge comes back on by itself when Shizuku
-  starts, for example after a restart
+- 🔌 **Start by itself** (on by default): PadBridge comes back on by itself when Shizuku
+  starts, for example after a restart, and its engine is started again if it ever stops
 - 🖥️ **Test on the other screen** and **Swap screens**
 - 🕹️ **Controllers:** every controller PadBridge has seen, remembered by its Bluetooth address
   (or maker, model and name), with its player, **Rumble, sticks and buttons**, Thor controls (to
@@ -131,17 +143,26 @@ going after you close the app. Every second it reads Linux's list of input devic
 For each controller that gets a player, the engine opens its `/dev/input` node and grabs it
 (`EVIOCGRAB`), so its own input stops reaching Android and games. It reads every button, stick
 and trigger, scales them against that controller's own ranges, and passes them to its player's
-pad. The player pads are made with Android's built-in `uinput` tool: virtual USB controllers with
-fixed names, maker and model, which Android identifies the same way every time. A trigger that
+pad. The player pads are virtual USB controllers the engine makes on `/dev/uinput` itself, with
+fixed names, maker and model, which Android identifies the same way every time. Each report is
+one `write()` from the thread that read the controller, so it reaches the player pad in the
+same moment; the readers also ask for a high priority, so they wake straight away. If
+`/dev/uinput` can't be opened, the engine falls back to Android's built-in `uinput` tool, which
+works the same but adds a hop through another process. A trigger that
 is only a button pushes its axis fully, and an analog trigger presses its button past halfway,
 so every controller looks the same through a player pad. When PadBridge is switched off, or a
 controller is left to Android, the engine lets go and Android sees the controller as usual.
 
-Rumble goes the other way. Each player pad tells Android it can rumble, and the `uinput` tool
-reports when a game uses it. The engine then plays a rumble effect on that player's controllers
-through the same node it grabbed. Java can't upload a rumble effect, so a tiny native helper
-(`app/src/main/native/padbridge.c`, no libraries, a few system calls) does that and also puts
+Rumble goes the other way. Each player pad tells Android it can rumble, and when a game uploads
+and plays an effect, the engine answers on the same `/dev/uinput` file and plays it, at the
+game's strength scaled by the controller's own, on that player's controllers through the node
+it grabbed. Java can't make these calls (they take pointers to structs), so a tiny native helper
+(`app/src/main/native/padbridge.c`, no libraries, a few system calls) does them, and also puts
 the controller's event times on the same clock as the engine, for the speed readout.
+
+The engine runs under a small keep-alive shell, which starts it again if it ever stops on its
+own (and gives up after five quick stops in a row). After a restart, Shizuku hands PadBridge its
+binder as soon as it starts, which starts the engine; a boot receiver posts a notice until then.
 
 The app and the engine talk through two small files in PadBridge's own folder: the app writes
 the settings, the engine writes what it's doing.
@@ -159,8 +180,8 @@ sent anywhere. It reads controller input only to pass it on, and never stores or
 
 The idea comes from [Docking Enhancer](https://github.com/Ezequiel-CE/Docking-Enhancer) by
 Ezequiel-CE, which replays an external controller onto the AYN Odin's built-in controller.
-PadBridge is its own code, written for the Thor: it uses Shizuku and Android's `uinput` tool
-instead of the Odin firmware's privileged service, and adds stable players for two or more
+PadBridge is its own code, written for the Thor: it uses Shizuku and Linux's `uinput` (or
+Android's `uinput` tool where that can't be opened) instead of the Odin firmware's privileged service, and adds stable players for two or more
 controllers.
 
 ## 🏗️ Building

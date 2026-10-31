@@ -158,8 +158,9 @@ public class SettingsActivity extends Activity {
                 modeSection();
                 playersSlider();
                 styleSection();
-                toggle("Start with Shizuku", "Turns PadBridge back on when Shizuku starts, e.g. after a restart",
-                        Prefs.KEY_AUTO_START, prefs.autoStart(), false);
+                toggle("Start by itself", "Back on after a restart as soon as Shizuku is running, and started again "
+                        + "if it ever stops", Prefs.KEY_AUTO_START, prefs.autoStart(), false);
+                restartNote();
                 break;
             case 1:
                 header("Controllers", "Every controller PadBridge has seen. Fix one to a player, or leave it alone");
@@ -495,6 +496,19 @@ public class SettingsActivity extends Activity {
         thanks.setLineSpacing(0, 1.15f);
         thanks.setPadding(0, (int) (4 * d), 0, 0);
         c.addView(thanks);
+    }
+
+    /** What a restart needs: Shizuku itself has to start again before PadBridge can. */
+    private void restartNote() {
+        LinearLayout c = card();
+        c.addView(plain("🔁  After a restart", 15, Color.WHITE));
+        TextView t = plain("PadBridge needs Shizuku running to start. With root, Shizuku starts with the Thor and "
+                + "PadBridge follows by itself. Without root, Shizuku has to be started again after each restart (in "
+                + "Shizuku, Start via Wireless debugging), unless your Shizuku version has a Start on boot option: "
+                + "then turn that on. PadBridge shows a notice after a restart until Shizuku is running, and comes "
+                + "back on its own once it is.", 12, SUB);
+        t.setPadding(0, (int) (4 * d), 0, 0);
+        c.addView(t);
     }
 
     // ---- Diagnostics ---------------------------------------------------------------------------

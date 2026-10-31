@@ -43,7 +43,38 @@ final class PlayerPad {
 
     String name() { return "PadBridge Player " + player; }
 
-    /** The `uinput` tool's "register" command for this pad. */
+    int vendor() { return xbox ? XBOX_VENDOR : VENDOR; }
+
+    int product() { return xbox ? XBOX_PRODUCT : PRODUCT + player; }
+
+    static final int RUMBLE_SLOTS = FF_EFFECTS;
+
+    /** Every button the pad has, as evdev key codes. */
+    static int[] keys() {
+        int[] k = new int[KEYS.length + PadState.EXTRA_COUNT];
+        System.arraycopy(KEYS, 0, k, 0, KEYS.length);
+        for (int i = 0; i < PadState.EXTRA_COUNT; i++) k[KEYS.length + i] = Evdev.BTN_JOYSTICK + i;
+        return k;
+    }
+
+    /** Every axis: (code, minimum, maximum, fuzz, flat) each, sticks, triggers, then the hat. */
+    int[] axes() {
+        int[] a = new int[5 * (PadState.AXES + 2)];
+        int n = 0;
+        for (int i = 0; i < PadState.AXES; i++) {
+            boolean trigger = i == PadState.LT || i == PadState.RT;
+            a[n++] = axisCode[i];
+            a[n++] = trigger ? 0 : -STICK_MAX - 1;
+            a[n++] = trigger ? TRIGGER_MAX : STICK_MAX;
+            a[n++] = trigger ? 0 : 16;
+            a[n++] = trigger ? 0 : 128;
+        }
+        int[] hat = {Evdev.ABS_HAT0X, -1, 1, 0, 0, Evdev.ABS_HAT0Y, -1, 1, 0, 0};
+        System.arraycopy(hat, 0, a, n, hat.length);
+        return a;
+    }
+
+    /** The `uinput` tool's "register" command for this pad (when /dev/uinput can't be used directly). */
     String registerJson() {
         StringBuilder keys = new StringBuilder();
         for (int k : KEYS) keys.append(k).append(',');
@@ -79,7 +110,18 @@ final class PlayerPad {
      * to `s`; empty when nothing changed. The D-pad is reported as a hat, like most controllers.
      */
     int[] diff(PadState s) {
-        int[] ev = new int[3 * (KEYS.length + PadState.EXTRA_COUNT + PadState.AXES + 2)];
+        int[] ev = new int[MAX_EVENTS];
+        int n = diff(s, ev);
+        int[] out = new int[n];
+        System.arraycopy(ev, 0, out, 0, n);
+        return out;
+    }
+
+    /** Room for every event one frame can need, as ints. */
+    static final int MAX_EVENTS = 3 * (KEYS.length + PadState.EXTRA_COUNT + PadState.AXES + 2);
+
+    /** Like {@link #diff(PadState)}, into `ev` (MAX_EVENTS long) without allocating: the count of ints. */
+    int diff(PadState s, int[] ev) {
         int n = 0;
         long changed = s.buttons ^ lastButtons;
         for (int b = 0; b < KEYS.length; b++) {
@@ -112,8 +154,6 @@ final class PlayerPad {
             ev[n++] = Evdev.EV_ABS; ev[n++] = Evdev.ABS_HAT0Y; ev[n++] = hy;
             lastHatY = hy;
         }
-        int[] out = new int[n];
-        System.arraycopy(ev, 0, out, 0, n);
-        return out;
+        return n;
     }
 }
