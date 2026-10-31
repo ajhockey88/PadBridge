@@ -342,6 +342,9 @@ public class EngineTest {
         c.hotkeys.put(Hotkeys.HOME, "select_start");
         c.hotkeys.put(Hotkeys.BACK, "made_up");
         Routing.Config back = Routing.Config.fromJson(c.toJson().toString());
+        c.announce = false;
+        check("player buzz setting survives JSON", !Routing.Config.fromJson(c.toJson().toString()).announce
+                && new Routing.Config().announce);
         check("hotkeys survive JSON, unknown ones dropped", "select_start".equals(back.hotkeys.get(Hotkeys.HOME))
                 && !back.hotkeys.containsKey(Hotkeys.BACK));
     }

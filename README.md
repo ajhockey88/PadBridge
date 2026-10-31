@@ -79,6 +79,9 @@ Once it's on, you can close PadBridge: it keeps running.
 - ⌨️ **Hotkeys:** in Settings > Hotkeys, give Android's Home and Back, swapping Players 1 and 2,
   and opening PadBridge a button combo, such as Select + Start or Guide + B. It works on any
   controller, and the combo's buttons don't reach the game. All off by default.
+- 💡 **Which player am I?:** when a controller connects or changes player, it buzzes once per
+  player number, and DualSense, DualShock 4, Switch Pro and Xbox 360 lights show its player
+  (color or number) where Android lets PadBridge set them. Switch it off in Settings > Players.
 - 🔁 **Starts by itself:** after a restart PadBridge comes back on its own as soon as Shizuku is
   running, and if its engine ever stops, it's started again within a few seconds. Shizuku
   itself has to run first: with root it starts with the Thor; without root it has to be started
