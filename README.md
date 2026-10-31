@@ -17,19 +17,19 @@ top screen.
 
 | 🎮 Players, on the bottom screen | 👆 Who is Player 1 |
 |---|---|
-| <img src="docs/screenshots/main.png?v=1.0.4" width="400" alt="Main screen: Player 1 with the Thor's controls, Player 2 with an Xbox controller, and the menu pill on top"> | <img src="docs/screenshots/mode-menu.png?v=1.0.4" width="400" alt="Mode menu: Thor first, Controller first, or Both Player 1"> |
+| <img src="docs/screenshots/main.png?v=1.0" width="400" alt="Main screen: Player 1 with the Thor's controls, Player 2 with an Xbox controller, and the menu pill on top"> | <img src="docs/screenshots/mode-menu.png?v=1.0" width="400" alt="Mode menu: Thor first, Controller first, or Both Player 1"> |
 | 🕹️ A controller's menu | 🤝 Both Player 1 |
-| <img src="docs/screenshots/controller-menu.png?v=1.0.4" width="400" alt="A controller's menu: always Player 1 to 4, automatic, leave it to Android, Nintendo layout, Thor's own controls"> | <img src="docs/screenshots/shared.png?v=1.0.4" width="400" alt="Both Player 1: the Thor and an Xbox controller on Player 1, an 8BitDo controller on Player 2"> |
+| <img src="docs/screenshots/controller-menu.png?v=1.0" width="400" alt="A controller's menu: always Player 1 to 4, automatic, leave it to Android, Nintendo layout, Thor's own controls"> | <img src="docs/screenshots/shared.png?v=1.0" width="400" alt="Both Player 1: the Thor and an Xbox controller on Player 1, an 8BitDo controller on Player 2"> |
 | 👥 Four players | 🎉 Up to eight |
-| <img src="docs/screenshots/four.png?v=1.0.4" width="400" alt="Four players: the Thor's controls, an Xbox, an 8BitDo and a DualSense controller, one per card"> | <img src="docs/screenshots/eight.png?v=1.0.4" width="400" alt="Eight players in two rows of four, six of them with a controller"> |
+| <img src="docs/screenshots/four.png?v=1.0" width="400" alt="Four players: the Thor's controls, an Xbox, an 8BitDo and a DualSense controller, one per card"> | <img src="docs/screenshots/eight.png?v=1.0" width="400" alt="Eight players in two rows of four, six of them with a controller"> |
 | 🔁 Swapping with more than two | 🧪 Controller test (top screen) |
-| <img src="docs/screenshots/swap.png?v=1.0.4" width="400" alt="Swap with four players: Player 1 is picked, tap the player to swap with"> | <img src="docs/screenshots/test.png?v=1.0.4" width="400" alt="Controller test on the top screen with Player 1 and Player 2 drawn live"> |
+| <img src="docs/screenshots/swap.png?v=1.0" width="400" alt="Swap with four players: Player 1 is picked, tap the player to swap with"> | <img src="docs/screenshots/test.png?v=1.0" width="400" alt="Controller test on the top screen with Player 1 and Player 2 drawn live"> |
 | 🚀 First-run setup | ⚙️ Settings |
-| <img src="docs/screenshots/setup.png?v=1.0.4" width="400" alt="Setup steps: install Shizuku, start it, allow PadBridge"> | <img src="docs/screenshots/settings.png?v=1.0.4" width="400" alt="Settings, Players tab: who is Player 1, players always ready, player pad type"> |
+| <img src="docs/screenshots/setup.png?v=1.0" width="400" alt="Setup steps: install Shizuku, start it, allow PadBridge"> | <img src="docs/screenshots/settings.png?v=1.0" width="400" alt="Settings, Players tab: who is Player 1, players always ready, player pad type"> |
 | 🕹️ Controllers | 🎛️ A controller's settings |
-| <img src="docs/screenshots/controllers.png?v=1.0.4" width="400" alt="Settings, Controllers tab: each controller seen, with its player, rumble and stick settings, Thor's own controls and Forget"> | <img src="docs/screenshots/controller-settings.png?v=1.0.4" width="400" alt="A controller's settings: how quickly it reports, rumble strength with a test button, stick deadzone, invert right stick, Nintendo layout"> |
+| <img src="docs/screenshots/controllers.png?v=1.0" width="400" alt="Settings, Controllers tab: each controller seen, with its player, rumble and stick settings, Thor's own controls and Forget"> | <img src="docs/screenshots/controller-settings.png?v=1.0" width="400" alt="A controller's settings: how quickly it reports, rumble strength with a test button, stick deadzone, invert right stick, Nintendo layout"> |
 | ℹ️ About | |
-| <img src="docs/screenshots/about.png?v=1.0.4" width="400" alt="Settings, About tab: version, the MIT license and thanks"> | |
+| <img src="docs/screenshots/about.png?v=1.0" width="400" alt="Settings, About tab: version, the MIT license and thanks"> | |
 
 The screenshots are drawn from PadBridge's own code with made-up controllers.
 

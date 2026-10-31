@@ -1,12 +1,10 @@
-🏠 PadBridge 1.0.6: Home and Back work as usual with the Thor's controls on Player 1.
+🌉 PadBridge 1.0: use the Thor's controls and your controllers together, without remapping your emulators.
 
-## ✨ What's new in 1.0.6
-- 🏠 **Home and Back as usual:** while PadBridge holds the Thor's controls, its Back, Home, Recents and volume buttons now reach Android looking exactly like the Thor's own, so the Thor's button layout and apps that watch its buttons (like Wayfinder) keep working
-- 🎮 **Thor found in any handle style:** in Xbox style the Thor calls itself "Xbox Wireless Controller", so PadBridge treated it as an outside controller and its Back and Home went to Player 1. PadBridge now recognizes it by AYN's maker id
-- 🔍 **Easier diagnostics:** saving diagnostics also copies the engine log, ready to paste in a message, and every save gets new file names
-
-## 🔋 Also new since 1.0.3
-- 🔋 **Battery on the cards:** each controller's card shows its battery, with 🔌 while it charges, and the Thor gives notice when one drops to 15%
+## ✨ What's in 1.0
+- 🎮 **Fixed players:** the Thor's controls and every controller you connect become **PadBridge Player 1** to **8**, the same way every time, so you map each emulator once
+- 🔌 **Easy connecting:** pair a controller and it lands on the next free player, remembered for next time
+- 🏠 **Thor buttons as usual:** Back, Home, Recents and volume keep working while PadBridge holds the Thor's controls, in any handle style
+- 📳 **Rumble, battery and speed:** games' rumble reaches your controllers, each card shows battery and how fast a controller reports
 
 ---
 
@@ -26,13 +24,7 @@ PadBridge bridges the Thor's controls and your controllers onto steady player co
 - 🔄 **Updates:** check, see what's new, and install from Settings, or reinstall the current release
 
 ## 📜 Release history
-- **1.0.6:** Home and Back work as usual with the Thor's controls on Player 1, in any handle style
-- **1.0.5:** the Thor's Home button works while PadBridge is on
-- **1.0.4:** controller battery on the cards, with a low battery notice
-- **1.0.3:** the Thor's Back and Home buttons work, and players stay in order
-- **1.0.2:** the number of players always matches, and roomier player cards
-- **1.0.1:** no more duplicate player pads
-- **1.0:** first release: the Thor's controls and your controllers as fixed players, up to 8, with rumble
+- **1.0:** first release: the Thor's controls and your controllers as fixed players, up to 8, with rumble, per-controller settings and battery
 
 ## 📲 Install
 New to PadBridge? Download `PadBridge.apk` below, open it on the Thor to install, then open PadBridge and follow the setup steps (it needs [Shizuku](https://github.com/RikkaApps/Shizuku/releases/latest)).
