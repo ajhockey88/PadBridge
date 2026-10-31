@@ -1,8 +1,9 @@
-🏠 PadBridge 1.0.3: the Thor's Back and Home buttons work again while PadBridge is on.
+🔋 PadBridge 1.0.4: see every controller's battery, and get a heads-up before one dies.
 
-## ✨ What's new in 1.0.3
-- 🏠 **Back and Home work:** while PadBridge holds the Thor's controls, its Back and Home buttons now go to Android, as they should, instead of to Player 1
-- 🔢 **Players in order:** after changing the number of players, Android could number Player 2 before Player 1, which showed up in emulators as "Player 2 1, Player 1 2". PadBridge now waits for the old pads to be gone, so the numbers line up
+## ✨ What's new in 1.0.4
+- 🔋 **Battery on the cards:** each controller's card shows its battery, with 🔌 while it charges. Its settings show it too
+- 🔔 **Low battery notice:** when a controller drops to 15%, the Thor tells you which player it is, once, until it charges
+- 🔍 **Diagnostics:** PadBridge's log now notes which key each of the Thor's buttons sends, to track down button problems
 
 ---
 
@@ -15,12 +16,14 @@ PadBridge bridges the Thor's controls and your controllers onto steady player co
 - 📌 **Fixed players:** pin a controller to a player, or leave it to Android
 - 📳 **Rumble:** games' rumble reaches your controllers, and the Thor's motor for its own controls
 - 🎛️ **Per-controller settings:** rumble strength, stick deadzone, invert right stick and Nintendo layout
+- 🔋 **Battery:** each controller's battery on its card, with a notice when one runs low
 - ⚡ **Speed readout:** how often each controller reports, and how little PadBridge adds
 - 🧪 **Controller test:** every player drawn live on the top screen
 - 📳 **Haptics:** pick a feel and strength for every action
 - 🔄 **Updates:** check, see what's new, and install from Settings, or reinstall the current release
 
 ## 📜 Release history
+- **1.0.4:** controller battery on the cards, with a low battery notice
 - **1.0.3:** the Thor's Back and Home buttons work, and players stay in order
 - **1.0.2:** the number of players always matches, and roomier player cards
 - **1.0.1:** no more duplicate player pads

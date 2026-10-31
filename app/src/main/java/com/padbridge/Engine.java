@@ -29,7 +29,7 @@ import org.json.JSONObject;
  */
 public final class Engine implements PhysicalPad.Listener, VirtualPads.Listener {
     /** Bumped when the engine changes; the app restarts an engine that doesn't match. */
-    static final int VERSION = 6;
+    static final int VERSION = 7;
     /** struct input_event: 24 bytes with 64-bit timestamps, 16 with 32-bit ones. */
     static final int EVENT_SIZE = System.getProperty("os.arch", "").contains("64") ? 24 : 16;
     private static final int BITS_PER_WORD = EVENT_SIZE == 24 ? 64 : 32;
@@ -138,11 +138,39 @@ public final class Engine implements PhysicalPad.Listener, VirtualPads.Listener 
                     log("scan failed: " + e);
                 }
             }
+            if (tick % 20 == 0) readBatteries();
             writeStatus(false);
             tick++;
             sleep(500);
         }
         shutdown();
+    }
+
+    /** Low: the notice shows at or below this, and clears once the controller charges past OK. */
+    static final int BATTERY_LOW = 15, BATTERY_OK = 25;
+
+    /** Reads every controller's battery (every 10 s), and gives notice when one runs low. */
+    private void readBatteries() {
+        List<PhysicalPad> list;
+        synchronized (this) {
+            list = new ArrayList<>(pads.values());
+        }
+        for (PhysicalPad p : list) {
+            if (p.builtin) continue; // the Thor's own battery is the Thor's
+            Battery b = Battery.read(p.dev.sysfs);
+            p.battery = b;
+            if (b == null || b.percent < 0) continue;
+            if (b.charging || b.percent > BATTERY_OK) {
+                p.warnedLow = false;
+            } else if (b.percent <= BATTERY_LOW && !p.warnedLow) {
+                p.warnedLow = true;
+                log("low battery: " + p.dev.name + " " + b.percent + "%");
+                String who = p.player > 0 ? "Player " + p.player + "'s " + p.dev.name : p.dev.name;
+                exec("cmd", "notification", "post", "-S", "bigtext", "-t", "🔋 Controller battery low",
+                        "padbridge-battery-" + Math.abs(p.dev.key().hashCode()),
+                        who + " is at " + b.percent + "%. Charge it soon");
+            }
+        }
     }
 
     private void shutdown() {
@@ -330,6 +358,11 @@ public final class Engine implements PhysicalPad.Listener, VirtualPads.Listener 
                     d.put("intervalMs", Math.round(p.intervalMs * 10) / 10.0);
                     d.put("addedMs", Math.round(p.addedMs * 100) / 100.0);
                     d.put("cantRumble", p.cantRumble && !p.builtin);
+                    Battery b = p.battery;
+                    if (b != null) {
+                        d.put("battery", b.percent);
+                        d.put("charging", b.charging);
+                    }
                     list.put(d);
                 }
             }

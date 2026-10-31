@@ -482,11 +482,14 @@ public class MainActivity extends Activity implements ShizukuClient.Listener {
             wlp.leftMargin = (int) (6 * d);
             row.addView(words, wlp);
             if (prefs.pin(ctl.key) > 0) row.addView(Ui.plain(this, "📌", 10, Color.WHITE));
+            if (ControllerSettings.lowBattery(ctl)) row.addView(Ui.plain(this, "🔋", 10, Color.WHITE));
             if (!ctl.error.isEmpty()) row.addView(Ui.plain(this, "⚠️", 10, Color.WHITE));
             return finishRow(row, ctl, 4);
         }
         List<String> notes = new ArrayList<>();
         notes.add(ctl.builtin ? "Built-in" : ctl.connection);
+        String battery = ControllerSettings.battery(ctl);
+        if (!battery.isEmpty()) notes.add(battery);
         if (prefs.pin(ctl.key) > 0) notes.add("📌 Always here");
         if (prefs.nintendo(ctl.key)) notes.add("A/B swapped");
         String speed = ControllerSettings.shortSpeed(ctl);

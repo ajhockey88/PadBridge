@@ -18,6 +18,8 @@ public class EngineTest {
         routesPlayers();
         controllerSettings();
         playerPadsReportChanges();
+        thorSystemKeys();
+        readsBatteries();
         if (failures > 0) {
             System.out.println(failures + " FAILED");
             System.exit(1);
@@ -278,6 +280,31 @@ public class EngineTest {
     }
 
     static boolean near(float a, float b) { return Math.abs(a - b) < 0.01f; }
+
+    static void thorSystemKeys() {
+        check("Back is Android's", Evdev.isSystemKey(Evdev.KEY_BACK));
+        check("Home is Android's", Evdev.isSystemKey(Evdev.KEY_HOMEPAGE));
+        check("Select is a player's", !Evdev.isSystemKey(Evdev.BTN_SELECT));
+    }
+
+    static void readsBatteries() throws Exception {
+        List<InputScan.Device> devs = InputScan.parseProcDevices(PROC, 64);
+        check("sysfs parsed", "/devices/x".equals(devs.get(1).sysfs));
+        java.nio.file.Path root = java.nio.file.Files.createTempDirectory("pb");
+        java.nio.file.Path hid = root.resolve("0005:045E:0B13.0001");
+        java.nio.file.Path input = java.nio.file.Files.createDirectories(hid.resolve("input/input5"));
+        check("no battery", Battery.near(input.toFile()) == null);
+        java.nio.file.Path supply = java.nio.file.Files.createDirectories(hid.resolve("power_supply/hid-44:16-battery"));
+        java.nio.file.Files.write(supply.resolve("capacity"), "42\n".getBytes());
+        java.nio.file.Files.write(supply.resolve("status"), "Discharging\n".getBytes());
+        java.nio.file.Files.write(supply.resolve("scope"), "Device\n".getBytes());
+        Battery b = Battery.near(input.toFile());
+        check("battery 42%", b != null && b.percent == 42 && !b.charging);
+        java.nio.file.Files.write(supply.resolve("status"), "Charging\n".getBytes());
+        check("charging", Battery.near(input.toFile()).charging);
+        java.nio.file.Files.write(supply.resolve("scope"), "System\n".getBytes());
+        check("the system's battery isn't a controller's", Battery.near(input.toFile()) == null);
+    }
 
     static void check(String what, boolean ok) {
         if (!ok) {

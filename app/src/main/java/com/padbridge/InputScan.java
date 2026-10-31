@@ -22,7 +22,7 @@ final class InputScan {
 
     /** One /dev/input/event node. */
     static final class Device {
-        String path = "", name = "", phys = "", uniq = "";
+        String path = "", name = "", phys = "", uniq = "", sysfs = "";
         int bus, vendor, product;
         final BitSet keys = new BitSet();
         final BitSet absBits = new BitSet();
@@ -81,6 +81,9 @@ final class InputScan {
                     break;
                 case 'P':
                     dev.phys = after(body, "Phys=");
+                    break;
+                case 'S':
+                    dev.sysfs = after(body, "Sysfs=");
                     break;
                 case 'U':
                     dev.uniq = after(body, "Uniq=");
