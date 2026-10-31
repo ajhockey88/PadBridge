@@ -1,8 +1,7 @@
-🌉 PadBridge 1.0: connect your controllers to the AYN Thor once, and your emulators keep their mappings.
+🧹 PadBridge 1.0.1: no more duplicate player pads in your emulators.
 
-## ✨ What's new in 1.0
-- 🎮 **First release:** the Thor's own controls and up to seven Bluetooth or USB controllers work at the same time, each as a fixed player
-- 🔁 **Map once:** games and emulators see **PadBridge Player 1**, **Player 2** and so on, the same way every time, whichever controllers you hold
+## ✨ What's new in 1.0.1
+- 🧹 **No duplicate players:** when PadBridge's engine restarted (after changing the number of players, turning it off and on, or an update), the old player pads could stay behind, so emulators like Eden listed "PadBridge Player 1" more than once. PadBridge now unplugs them when it stops, and clears any leftovers when it starts
 
 ---
 
@@ -21,6 +20,7 @@ PadBridge bridges the Thor's controls and your controllers onto steady player co
 - 🔄 **Updates:** check, see what's new, and install from Settings, or reinstall the current release
 
 ## 📜 Release history
+- **1.0.1:** no more duplicate player pads
 - **1.0:** first release: the Thor's controls and your controllers as fixed players, up to 8, with rumble
 
 ## 📲 Install

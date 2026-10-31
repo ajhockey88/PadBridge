@@ -29,7 +29,7 @@ import org.json.JSONObject;
  */
 public final class Engine implements PhysicalPad.Listener, VirtualPads.Listener {
     /** Bumped when the engine changes; the app restarts an engine that doesn't match. */
-    static final int VERSION = 3;
+    static final int VERSION = 4;
     /** struct input_event: 24 bytes with 64-bit timestamps, 16 with 32-bit ones. */
     static final int EVENT_SIZE = System.getProperty("os.arch", "").contains("64") ? 24 : 16;
     private static final int BITS_PER_WORD = EVENT_SIZE == 24 ? 64 : 32;
@@ -70,7 +70,54 @@ public final class Engine implements PhysicalPad.Listener, VirtualPads.Listener 
         System.out.flush();
     }
 
+    /**
+     * Unplugs player pads left by an engine that was stopped without cleaning up: its `uinput`
+     * tool keeps them, so games would see a second Player 1. Those are tools marked as
+     * PadBridge's, and, from before the mark, `uinput` tools whose parent is gone, which nothing
+     * can drive any more.
+     */
+    private static void unplugLeftovers() {
+        File[] procs = new File("/proc").listFiles();
+        if (procs == null) return;
+        int me = android.os.Process.myPid();
+        for (File p : procs) {
+            int pid;
+            try {
+                pid = Integer.parseInt(p.getName());
+            } catch (NumberFormatException e) {
+                continue;
+            }
+            if (pid == me) continue;
+            String env = read(new File(p, "environ"));
+            String cmd = read(new File(p, "cmdline"));
+            if (cmd == null || !cmd.contains("uinput")) continue;
+            boolean ours = env != null && env.contains(VirtualPads.MARK + "=1");
+            boolean orphan = parent(p) == 1;
+            if (ours || orphan) {
+                log("unplugging leftover player pads (pid " + pid + ")");
+                android.os.Process.killProcess(pid);
+            }
+        }
+    }
+
+    private static int parent(File proc) {
+        String stat = read(new File(proc, "stat"));
+        if (stat == null) return -1;
+        // pid (name) state ppid ...: the name can hold spaces, so start after its ')'.
+        String[] f = stat.substring(stat.lastIndexOf(')') + 2).split(" ");
+        try {
+            return Integer.parseInt(f[1]);
+        } catch (RuntimeException e) {
+            return -1;
+        }
+    }
+
     private void run() {
+        unplugLeftovers();
+        // Stopped with pkill (SIGTERM): unplug the pads on the way out.
+        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+            @Override public void run() { players.stop(); }
+        }, "PadBridge shutdown"));
         long tick = 0;
         while (true) {
             if (tick % 20 == 0 && !apk.exists()) {

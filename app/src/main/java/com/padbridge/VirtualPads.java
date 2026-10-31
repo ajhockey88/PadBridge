@@ -24,6 +24,8 @@ final class VirtualPads {
     /** The tool's rumble lines: {"reason":"vibrating","id":2,"status":1}, in any order. */
     private static final Pattern ID = Pattern.compile("\"id\"\\s*:\\s*(\\d+)"),
             STATUS = Pattern.compile("\"status\"\\s*:\\s*(-?\\d+)");
+    /** In the `uinput` tool's environment: it holds PadBridge's player pads. */
+    static final String MARK = "PADBRIDGE_PADS";
     private final File log;
     private final Listener listener;
     private Process process;
@@ -52,6 +54,8 @@ final class VirtualPads {
         if (process == null) {
             ProcessBuilder pb = new ProcessBuilder("uinput", "-");
             pb.redirectErrorStream(true);
+            // Marks the tool as PadBridge's, so a later engine can find it if this one dies.
+            pb.environment().put(MARK, "1");
             process = pb.start();
             stdin = process.getOutputStream();
             listen(process);
