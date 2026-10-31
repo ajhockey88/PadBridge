@@ -26,6 +26,11 @@ final class VirtualPads {
             STATUS = Pattern.compile("\"status\"\\s*:\\s*(-?\\d+)");
     /** In the `uinput` tool's environment: it holds PadBridge's player pads. */
     static final String MARK = "PADBRIDGE_PADS";
+    /**
+     * The tool's id for "PadBridge Thor Keys", a small keyboard that passes the Thor's Back and
+     * Home buttons on to Android while PadBridge holds the Thor's controls.
+     */
+    private static final int KEYS_ID = 100;
     private final File log;
     private final Listener listener;
     private Process process;
@@ -52,6 +57,9 @@ final class VirtualPads {
             players = Math.max(players, had);
         }
         if (process == null) {
+            // Android numbers controllers with the lowest free number, so wait for any pads
+            // just unplugged to be gone first: otherwise Player 1 gets a later number than Player 2.
+            waitForUnplug();
             ProcessBuilder pb = new ProcessBuilder("uinput", "-");
             pb.redirectErrorStream(true);
             // Marks the tool as PadBridge's, so a later engine can find it if this one dies.
@@ -59,6 +67,8 @@ final class VirtualPads {
             process = pb.start();
             stdin = process.getOutputStream();
             listen(process);
+            write(keysJson());
+            sleep(100);
         }
         while (pads.size() < players) {
             PlayerPad pad = new PlayerPad(pads.size() + 1, style);
@@ -95,6 +105,27 @@ final class VirtualPads {
         }
     }
 
+    /** Presses or lets go of one of the Thor's system buttons, for Android. */
+    synchronized void systemKey(int code, boolean down) {
+        if (stdin == null) return;
+        try {
+            write("{\"id\":" + KEYS_ID + ",\"command\":\"inject\",\"events\":[" + Evdev.EV_KEY + "," + code + ","
+                    + (down ? 1 : 0) + "," + Evdev.EV_SYN + ",0,0]}");
+        } catch (IOException e) {
+            Engine.log("uinput write failed: " + e);
+        }
+    }
+
+    private static String keysJson() {
+        StringBuilder keys = new StringBuilder();
+        for (int k : Evdev.SYSTEM_KEYS) keys.append(k).append(',');
+        keys.setLength(keys.length() - 1);
+        return "{\"id\":" + KEYS_ID + ",\"command\":\"register\",\"name\":\"PadBridge Thor Keys\",\"vid\":"
+                + 0x1209 + ",\"pid\":" + 0x5040 + ",\"bus\":\"usb\",\"configuration\":[{\"type\":"
+                + Evdev.UI_SET_EVBIT + ",\"data\":[" + Evdev.EV_KEY + "]},{\"type\":" + Evdev.UI_SET_KEYBIT
+                + ",\"data\":[" + keys + "]}]}";
+    }
+
     synchronized void stop() {
         try {
             if (stdin != null) stdin.close();
@@ -129,6 +160,24 @@ final class VirtualPads {
         }, "PadBridge uinput output");
         t.setDaemon(true);
         t.start();
+    }
+
+    /** Waits (up to 3 s) until Android's input list has no PadBridge pads. */
+    private static void waitForUnplug() {
+        for (int i = 0; i < 30; i++) {
+            try {
+                String devices = new String(java.nio.file.Files.readAllBytes(new File("/proc/bus/input/devices").toPath()),
+                        StandardCharsets.UTF_8);
+                if (!devices.contains("PadBridge ")) {
+                    if (i > 0) sleep(300); // and for Android to catch up with the kernel
+                    return;
+                }
+            } catch (IOException e) {
+                return;
+            }
+            sleep(100);
+        }
+        Engine.log("old player pads were still plugged in after 3 s");
     }
 
     private boolean alive() {

@@ -29,7 +29,7 @@ import org.json.JSONObject;
  */
 public final class Engine implements PhysicalPad.Listener, VirtualPads.Listener {
     /** Bumped when the engine changes; the app restarts an engine that doesn't match. */
-    static final int VERSION = 5;
+    static final int VERSION = 6;
     /** struct input_event: 24 bytes with 64-bit timestamps, 16 with 32-bit ones. */
     static final int EVENT_SIZE = System.getProperty("os.arch", "").contains("64") ? 24 : 16;
     private static final int BITS_PER_WORD = EVENT_SIZE == 24 ? 64 : 32;
@@ -264,6 +264,11 @@ public final class Engine implements PhysicalPad.Listener, VirtualPads.Listener 
     @Override
     public void onFrame(PhysicalPad pad) {
         refresh(pad.player);
+    }
+
+    @Override
+    public void onSystemKey(int code, boolean down) {
+        players.systemKey(code, down);
     }
 
     private final java.util.concurrent.ExecutorService motor = java.util.concurrent.Executors.newSingleThreadExecutor();
