@@ -29,7 +29,7 @@ import org.json.JSONObject;
  */
 public final class Engine implements PhysicalPad.Listener {
     /** Bumped when the engine changes; the app restarts an engine that doesn't match. */
-    static final int VERSION = 1;
+    static final int VERSION = 2;
     /** struct input_event: 24 bytes with 64-bit timestamps, 16 with 32-bit ones. */
     static final int EVENT_SIZE = System.getProperty("os.arch", "").contains("64") ? 24 : 16;
     private static final int BITS_PER_WORD = EVENT_SIZE == 24 ? 64 : 32;
@@ -38,6 +38,8 @@ public final class Engine implements PhysicalPad.Listener {
     private final VirtualPads players;
     private Routing.Config cfg = new Routing.Config();
     private long configStamp = -1;
+    /** Fewer players were asked for: remove the spare player pads on the next route. */
+    private boolean fewerPlayers;
     /** Controllers by node, in the order they connected. */
     private final Map<String, PhysicalPad> pads = new HashMap<>();
     private final PadState scratch = new PadState(), merged = new PadState();
@@ -115,6 +117,7 @@ public final class Engine implements PhysicalPad.Listener {
         if (text == null) return false;
         Routing.Config next = Routing.Config.fromJson(text);
         synchronized (this) {
+            if (next.keepPlayers < cfg.keepPlayers) fewerPlayers = true;
             cfg = next;
             for (PhysicalPad p : pads.values()) p.mapper.nintendo = cfg.nintendo.contains(p.dev.key());
         }
@@ -161,6 +164,7 @@ public final class Engine implements PhysicalPad.Listener {
         List<PhysicalPad> order;
         int most = 0;
         String style;
+        boolean shrink;
         synchronized (this) {
             order = ordered();
             List<InputScan.Device> devs = new ArrayList<>();
@@ -174,6 +178,14 @@ public final class Engine implements PhysicalPad.Listener {
             }
             most = Math.max(most, cfg.keepPlayers);
             style = cfg.style;
+            shrink = fewerPlayers;
+            fewerPlayers = false;
+        }
+        // Pads are only removed when asked: one left over from a controller that disconnected
+        // stays, so a game never loses a player mid-session.
+        if (shrink && most < players.count()) {
+            log("fewer players: " + players.count() + " -> " + most);
+            players.shrink(most);
         }
         // Player pads first, so a controller is never taken from Android before its pad exists.
         players.ensure(most, style);

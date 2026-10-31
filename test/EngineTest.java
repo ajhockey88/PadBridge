@@ -193,6 +193,30 @@ public class EngineTest {
             only.mode = mode;
             check("thor alone is P1 in " + mode, Routing.assign(Arrays.asList(all.get(0)), only)[0] == 1);
         }
+
+        // A party: the Thor and eight Bluetooth controllers. Players 1 to 8, the ninth is left alone.
+        List<InputScan.Device> party = new ArrayList<>();
+        party.add(all.get(0));
+        for (int i = 0; i < 8; i++) {
+            InputScan.Device d = new InputScan.Device();
+            d.name = "Pad " + i;
+            d.path = "/dev/input/event" + (20 + i);
+            d.bus = 5;
+            d.vendor = 0x045e;
+            d.product = 0x0b13;
+            d.uniq = "aa:bb:cc:dd:ee:0" + i;
+            party.add(d);
+        }
+        p = Routing.assign(party, new Routing.Config());
+        boolean inOrder = true;
+        for (int i = 0; i < 8; i++) inOrder &= p[i] == i + 1;
+        check("party: thor and seven controllers are Players 1 to 8", inOrder);
+        check("party: the ninth is left to Android", p[8] == Routing.OFF);
+        Routing.Config swapped = new Routing.Config();
+        swapped.pins.put(party.get(0).key(), 5);
+        swapped.pins.put(party.get(4).key(), 1);
+        p = Routing.assign(party, swapped);
+        check("party: swapped Players 1 and 5", p[0] == 5 && p[4] == 1 && p[1] == 2 && p[5] == 6);
     }
 
     static void playerPadsReportChanges() throws Exception {

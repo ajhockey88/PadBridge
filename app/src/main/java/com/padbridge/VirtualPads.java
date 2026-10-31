@@ -50,6 +50,16 @@ final class VirtualPads {
         }
     }
 
+    /**
+     * Leaves only Player 1 to `players`. The `uinput` tool can't remove one pad, so they're all
+     * unplugged and plugged in again, in order.
+     */
+    synchronized void shrink(int players) throws IOException {
+        if (players >= pads.size()) return;
+        stop();
+        ensure(Math.max(1, players), style);
+    }
+
     /** Reports a player's new state. */
     synchronized void send(int player, PadState state) {
         if (player < 1 || player > pads.size() || stdin == null) return;

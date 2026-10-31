@@ -5,12 +5,12 @@
 [![Downloads](https://img.shields.io/github/downloads/ajhockey88/PadBridge/total?style=for-the-badge&logo=github&label=Downloads&color=yellowgreen)](https://github.com/ajhockey88/PadBridge/releases)
 [![Latest release](https://img.shields.io/github/v/release/ajhockey88/PadBridge?style=for-the-badge&logo=github&label=Latest%20release&color=blue)](https://github.com/ajhockey88/PadBridge/releases/latest)
 
-🎮 Use the AYN Thor's own controls and an external controller at the same time, with fixed players.
+🎮 Use the AYN Thor's own controls and up to seven external controllers at the same time, with fixed players.
 
 🔁 Tired of remapping your emulators every time you connect a controller to the Thor? PadBridge
-takes over the Thor's controls and your controllers and gives games two steady controllers,
-**PadBridge Player 1** and **PadBridge Player 2**, which look the same every time. Map them once
-in each emulator and you're done, whichever controller you pick up.
+takes over the Thor's controls and your controllers and gives games steady player controllers,
+**PadBridge Player 1**, **PadBridge Player 2** and so on up to Player 8, which look the same every
+time. Map them once in each emulator and you're done, whichever controllers you pick up.
 
 ## 📸 Screens
 
@@ -19,10 +19,14 @@ in each emulator and you're done, whichever controller you pick up.
 | <img src="docs/screenshots/main.png" width="400" alt="Main screen: Player 1 with the Thor's controls, Player 2 with an Xbox controller, and the menu pill on top"> | <img src="docs/screenshots/mode-menu.png" width="400" alt="Mode menu: Thor first, Controller first, or Both Player 1"> |
 | 🕹️ A controller's menu | 🤝 Both Player 1 |
 | <img src="docs/screenshots/controller-menu.png" width="400" alt="A controller's menu: always Player 1 to 4, automatic, leave it to Android, Nintendo layout, Thor's own controls"> | <img src="docs/screenshots/shared.png" width="400" alt="Both Player 1: the Thor and an Xbox controller on Player 1, an 8BitDo controller on Player 2"> |
-| 🧪 Controller test (top screen) | 🚀 First-run setup |
-| <img src="docs/screenshots/test.png" width="400" alt="Controller test on the top screen with Player 1 and Player 2 drawn live"> | <img src="docs/screenshots/setup.png" width="400" alt="Setup steps: install Shizuku, start it, allow PadBridge"> |
-| ⚙️ Settings | 🕹️ Controllers |
-| <img src="docs/screenshots/settings.png" width="400" alt="Settings, Players tab: who is Player 1, players always ready, player pad type"> | <img src="docs/screenshots/controllers.png" width="400" alt="Settings, Controllers tab: each controller seen, with its player, Nintendo layout, Thor's own controls and Forget"> |
+| 👥 Four players | 🎉 Up to eight |
+| <img src="docs/screenshots/four.png" width="400" alt="Four players: the Thor's controls, an Xbox, an 8BitDo and a DualSense controller, one per card"> | <img src="docs/screenshots/eight.png" width="400" alt="Eight players in two rows of four, six of them with a controller"> |
+| 🔁 Swapping with more than two | 🧪 Controller test (top screen) |
+| <img src="docs/screenshots/swap.png" width="400" alt="Swap with four players: Player 1 is picked, tap the player to swap with"> | <img src="docs/screenshots/test.png" width="400" alt="Controller test on the top screen with Player 1 and Player 2 drawn live"> |
+| 🚀 First-run setup | ⚙️ Settings |
+| <img src="docs/screenshots/setup.png" width="400" alt="Setup steps: install Shizuku, start it, allow PadBridge"> | <img src="docs/screenshots/settings.png" width="400" alt="Settings, Players tab: who is Player 1, players always ready, player pad type"> |
+| 🕹️ Controllers | |
+| <img src="docs/screenshots/controllers.png" width="400" alt="Settings, Controllers tab: each controller seen, with its player, Nintendo layout, Thor's own controls and Forget"> | |
 
 The screenshots are drawn from the app's own code with made-up controllers; pictures from a
 Thor will replace them.
@@ -30,16 +34,20 @@ Thor will replace them.
 ## 👆 Using it
 
 PadBridge opens on the bottom screen, so the game on the top screen stays put. Each player has
-a card with the controllers on it. Once it's on, you can close PadBridge: it keeps running.
+a card with the controllers on it: two side by side, four in a square, up to eight in two rows.
+Once it's on, you can close PadBridge: it keeps running.
 
 - 📱 **Thor first** (the default): the Thor's controls are Player 1, and controllers you
-  connect are Player 2, 3 and 4.
+  connect are Player 2, 3, 4 and so on, in the order they connect.
 - 🎮 **Controller first**: a connected controller is Player 1 and the Thor's controls are the
   next player. Handy docked, when a friend can still join on the Thor.
 - 🤝 **Both Player 1**: the Thor and your first controller both drive Player 1, so you can put
   the Thor down and pick up a controller mid-game. More controllers are Player 2 and up.
-- 🔁 **Swap** flips Player 1 and Player 2 in one tap.
-- ⋯ **Tap a controller** to fix it to a player (📌 it stays there whatever the mode), leave it to
+- 👥 **−** and **+** next to PLAYERS set how many players games always see, from 1 to 8. A new
+  controller still gets the next free player by itself.
+- 🔁 **Swap** flips Player 1 and Player 2 in one tap. With more than two players, tap Swap and
+  then the two players to swap (📌 their controllers stay there afterwards).
+- ⋯ **Tap a controller** to fix it to a player (a numbered chip for each, 1 to 8) (📌 it stays there whatever the mode), leave it to
   Android, swap A/B and X/Y for Nintendo-style controllers, or mark it as the Thor's own controls
   if PadBridge didn't spot them.
 - 🧪 **Test** opens the controller test on the top screen: every player pad drawn live, so you
@@ -48,14 +56,14 @@ a card with the controllers on it. Once it's on, you can close PadBridge: it kee
 The menu along the top has the mode, 🔁 Swap, 🧪 Test, ⚙️ Settings and ✖️ Close. Every
 button works with a controller too.
 
-**In your emulators:** map **PadBridge Player 1** to port 1 and **PadBridge Player 2** to port
-2, once. The real controllers PadBridge took over stay silent, so they don't claim a port of
+**In your emulators:** map **PadBridge Player 1** to port 1, **PadBridge Player 2** to port 2,
+and so on for as many players as the game takes, once. The real controllers PadBridge took over stay silent, so they don't claim a port of
 their own.
 
 ## ⚙️ Settings
 
 - 🎮 **Players:** who is Player 1, how many player pads are always ready (2 by default, so
-  Player 2 is there before a friend connects), and the player pad type: **Standard** Android
+  Player 2 is there before a friend connects; up to 8), and the player pad type: **Standard** Android
   controllers, or **Xbox 360** for games that only know Xbox controllers.
 - 🔌 **Start with Shizuku** (on by default): PadBridge comes back on by itself when Shizuku
   starts, for example after a restart.

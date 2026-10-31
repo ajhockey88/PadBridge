@@ -175,7 +175,7 @@ public class TestActivity extends Activity {
                 c.drawText("No controllers yet. Turn PadBridge on, or connect a controller.", 24 * d, 120 * d, paint);
                 return;
             }
-            int cols = Math.min(list.size(), list.size() > 2 ? 2 : list.size());
+            int cols = list.size() <= 2 ? list.size() : list.size() <= 4 ? 2 : list.size() <= 6 ? 3 : 4;
             int rows = (list.size() + cols - 1) / cols;
             float top = 90 * d, gap = 12 * d, side = 20 * d;
             float w = (getWidth() - 2 * side - (cols - 1) * gap) / cols;

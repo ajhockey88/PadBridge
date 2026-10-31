@@ -47,9 +47,12 @@ public class MainActivity extends Activity implements ShizukuClient.Listener {
     static EngineControl.Status demoStatus;
     static boolean demoSetup;
     private boolean busy;
+    /** Swapping more than two players: 0 when not, -1 while picking the first, else that player. */
+    private int swapFrom;
+    private static final int BIG = 0, COMPACT = 1, MINI = 2;
 
     private static final String[][] MODES = {
-            {Routing.THOR_FIRST, "📱", "Thor first", "The Thor's controls are Player 1. Controllers you connect are Player 2, 3 and 4"},
+            {Routing.THOR_FIRST, "📱", "Thor first", "The Thor's controls are Player 1. Controllers you connect are Player 2 and up"},
             {Routing.CONTROLLER_FIRST, "🎮", "Controller first", "A connected controller is Player 1 and the Thor's controls are the next player"},
             {Routing.SHARED, "🤝", "Both Player 1", "The Thor and your first controller both drive Player 1. More controllers are Player 2 and up"}};
 
@@ -86,7 +89,7 @@ public class MainActivity extends Activity implements ShizukuClient.Listener {
         bar.addView(modeButton, weight(1.35f));
         bar.addView(separator());
         bar.addView(barButton("🔁", "Swap", new View.OnClickListener() {
-            @Override public void onClick(View v) { swapPlayers(); }
+            @Override public void onClick(View v) { swapPressed(); }
         }), weight(1f));
         bar.addView(separator());
         bar.addView(barButton("🧪", "Test", new View.OnClickListener() {
@@ -184,7 +187,7 @@ public class MainActivity extends Activity implements ShizukuClient.Listener {
         modeButton.setText(MODES[modeIndex()][1] + "  " + MODES[modeIndex()][2] + " ▾");
         StringBuilder key = new StringBuilder();
         key.append(needsSetup()).append(EngineControl.stuck()).append(ShizukuClient.isRunning()).append(prefs.enabled()).append(status.alive)
-                .append(prefs.keepPlayers()).append(status.players).append(busy).append(status.error);
+                .append(prefs.keepPlayers()).append(busy).append(status.error).append(swapFrom);
         for (EngineControl.Controller c : status.controllers) {
             key.append('|').append(c.key).append(c.player).append(c.active).append(c.builtin).append(c.error)
                     .append(prefs.nintendo(c.key)).append(prefs.pin(c.key));
@@ -248,6 +251,7 @@ public class MainActivity extends Activity implements ShizukuClient.Listener {
     }
 
     private static String players(int n) {
+        if (n > 3) return "Players 1 to " + n;
         StringBuilder sb = new StringBuilder();
         for (int p = 1; p <= n; p++) {
             if (p > 1) sb.append(p == n ? " and " : ", ");
@@ -281,75 +285,171 @@ public class MainActivity extends Activity implements ShizukuClient.Listener {
 
     // ---- Players --------------------------------------------------------------------------------
 
+    /** Player cards shown: the players always ready, and any player a controller is on. */
+    private int playerCount() {
+        return Math.min(Routing.MAX_PLAYERS, Math.max(prefs.keepPlayers(), usedPlayers()));
+    }
+
+    private int usedPlayers() {
+        int most = 0;
+        for (EngineControl.Controller c : status.controllers) most = Math.max(most, c.player);
+        return most;
+    }
+
     private void playerCards() {
-        int count = Math.max(2, Math.max(prefs.keepPlayers(), status.players));
-        for (EngineControl.Controller c : status.controllers) count = Math.max(count, c.player);
-        count = Math.min(Routing.MAX_PLAYERS, count);
+        int count = playerCount();
         boolean on = prefs.enabled() && status.alive;
+        playersHeader(count);
+        // Up to three side by side, four in a square, more in two rows.
+        int cols = count == 4 ? 2 : count <= 3 ? count : (count + 1) / 2;
+        int size = count <= 2 ? BIG : count <= 4 ? COMPACT : MINI;
         LinearLayout rows = new LinearLayout(this);
         rows.setOrientation(LinearLayout.VERTICAL);
         LinearLayout row = null;
         for (int p = 1; p <= count; p++) {
-            if (row == null || (count > 2 && p == 3)) {
+            int col = (p - 1) % cols;
+            if (col == 0) {
                 row = new LinearLayout(this);
-                LinearLayout.LayoutParams rlp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f);
-                rows.addView(row, rlp);
+                rows.addView(row, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
             }
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f);
-            lp.setMargins(p % 2 == 1 ? 0 : (int) (4 * d), 0, p % 2 == 1 ? (int) (4 * d) : 0, (int) (8 * d));
-            row.addView(playerCard(p, on, count > 2), lp);
+            row.addView(playerCard(p, on, size), cell(col, cols));
         }
+        // Keep the last row's cards as wide as the others.
+        for (int col = (count - 1) % cols + 1; col < cols; col++) row.addView(new View(this), cell(col, cols));
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f);
         lp.topMargin = (int) (2 * d);
         content.addView(rows, lp);
     }
 
-    private View playerCard(int p, boolean on, boolean compact) {
+    private LinearLayout.LayoutParams cell(int col, int cols) {
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f);
+        lp.setMargins(col == 0 ? 0 : (int) (4 * d), 0, col == cols - 1 ? 0 : (int) (4 * d), (int) (8 * d));
+        return lp;
+    }
+
+    /** "PLAYERS", with − and + for how many are ready, or the swap prompt while swapping. */
+    private void playersHeader(final int count) {
+        LinearLayout row = new LinearLayout(this);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding((int) (4 * d), 0, 0, (int) (6 * d));
+        if (swapFrom != 0) {
+            TextView t = Ui.plain(this, swapFrom < 0 ? "🔁  Tap the first player to swap"
+                    : "🔁  Now tap the player to swap with Player " + swapFrom, 14, Ui.ACCENT_TEXT);
+            row.addView(t, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+            TextView cancel = Ui.button(this, "Cancel");
+            cancel.setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View v) {
+                    swapFrom = 0;
+                    changed();
+                }
+            });
+            row.addView(cancel);
+            content.addView(row);
+            return;
+        }
+        TextView label = Ui.plain(this, "PLAYERS", 11, Ui.DIM);
+        label.setLetterSpacing(0.1f);
+        row.addView(label, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        final int least = Math.max(1, usedPlayers());
+        TextView minus = stepper("−", count > least);
+        minus.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { setPlayers(count - 1); }
+        });
+        row.addView(minus);
+        TextView value = Ui.plain(this, count + (count == 1 ? " player" : " players"), 14, Ui.TEXT);
+        value.setGravity(Gravity.CENTER);
+        row.addView(value, new LinearLayout.LayoutParams((int) (86 * d), ViewGroup.LayoutParams.WRAP_CONTENT));
+        TextView plus = stepper("+", count < Routing.MAX_PLAYERS);
+        plus.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { setPlayers(count + 1); }
+        });
+        row.addView(plus);
+        content.addView(row);
+    }
+
+    private TextView stepper(String s, boolean enabled) {
+        TextView t = Ui.button(this, s);
+        t.setTextSize(17);
+        t.setPadding(0, 0, 0, 0);
+        t.setEnabled(enabled);
+        t.setTextColor(enabled ? Ui.TEXT : Ui.DIM);
+        if (!enabled) t.setBackground(Ui.round(Ui.CARD, 18 * d));
+        t.setLayoutParams(new LinearLayout.LayoutParams((int) (40 * d), (int) (30 * d)));
+        return t;
+    }
+
+    /** How many player pads games always see; the rest come and go with controllers. */
+    private void setPlayers(int n) {
+        n = Math.max(Math.max(1, usedPlayers()), Math.min(Routing.MAX_PLAYERS, n));
+        Haptics.play(this, Haptics.PICK);
+        prefs.raw().edit().putInt(Prefs.KEY_KEEP_PLAYERS, n).apply();
+        changed();
+    }
+
+    private View playerCard(final int p, boolean on, int size) {
+        boolean compact = size != BIG, mini = size == MINI;
         FrameLayout frame = new FrameLayout(this);
         GradientDrawable bg = Ui.round(Ui.CARD, 14 * d);
-        bg.setStroke(Math.max(1, (int) (1.2f * d)), on ? blend(Ui.player(p), Ui.CARD, 0.35f) : Ui.OUTLINE);
+        boolean picked = swapFrom == p;
+        bg.setStroke(Math.max(1, (int) ((picked ? 2.5f : 1.2f) * d)),
+                picked ? Ui.player(p) : on ? blend(Ui.player(p), Ui.CARD, 0.35f) : Ui.OUTLINE);
         frame.setBackground(bg);
+        if (swapFrom != 0) {
+            // Swapping: the whole card is the button.
+            frame.setFocusable(true);
+            frame.setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View v) { pickSwap(p); }
+            });
+        }
         // The player's number, big and faint in the corner.
-        TextView mark = Ui.plain(this, String.valueOf(p), compact ? 80 : 150, blend(on ? Ui.player(p) : Ui.DIM, Ui.CARD, 0.10f));
+        TextView mark = Ui.plain(this, String.valueOf(p), mini ? 64 : compact ? 80 : 150,
+                blend(on ? Ui.player(p) : Ui.DIM, Ui.CARD, 0.10f));
         mark.setTypeface(Typeface.DEFAULT_BOLD);
         mark.setIncludeFontPadding(false);
         FrameLayout.LayoutParams mlp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM | Gravity.END);
-        mlp.setMargins(0, 0, (int) (14 * d), (int) (2 * d));
+        mlp.setMargins(0, 0, (int) ((mini ? 8 : 14) * d), (int) (2 * d));
         frame.addView(mark, mlp);
         LinearLayout c = new LinearLayout(this);
         c.setOrientation(LinearLayout.VERTICAL);
-        c.setPadding((int) (14 * d), (int) (12 * d), (int) (14 * d), (int) (12 * d));
+        int pad = (int) ((mini ? 9 : 14) * d);
+        c.setPadding(pad, (int) ((mini ? 9 : 12) * d), pad, pad);
         frame.addView(c, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
         LinearLayout head = new LinearLayout(this);
         head.setGravity(Gravity.CENTER_VERTICAL);
-        TextView badge = Ui.plain(this, String.valueOf(p), 15, Color.BLACK);
+        TextView badge = Ui.plain(this, String.valueOf(p), mini ? 13 : 15, Color.BLACK);
         badge.setTypeface(Typeface.DEFAULT_BOLD);
         badge.setGravity(Gravity.CENTER);
-        badge.setBackground(Ui.round(on ? Ui.player(p) : Ui.DIM, 9 * d));
-        head.addView(badge, new LinearLayout.LayoutParams((int) (28 * d), (int) (28 * d)));
-        TextView name = Ui.plain(this, "Player " + p, compact ? 18 : 21, Color.WHITE);
+        badge.setBackground(Ui.round(on ? Ui.player(p) : Ui.DIM, (mini ? 7 : 9) * d));
+        int bs = (int) ((mini ? 22 : 28) * d);
+        head.addView(badge, new LinearLayout.LayoutParams(bs, bs));
+        TextView name = Ui.plain(this, "Player " + p, mini ? 15 : compact ? 18 : 21, Color.WHITE);
         name.setTypeface(Typeface.DEFAULT_BOLD);
+        name.setSingleLine(true);
         LinearLayout.LayoutParams nlp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
-        nlp.leftMargin = (int) (10 * d);
+        nlp.leftMargin = (int) ((mini ? 7 : 10) * d);
         head.addView(name, nlp);
         c.addView(head);
-        TextView sees = Ui.plain(this, "Games see “PadBridge Player " + p + "”", 12, Ui.DIM);
-        sees.setPadding(0, (int) (4 * d), 0, (int) (8 * d));
-        sees.setSingleLine(true);
-        sees.setEllipsize(TextUtils.TruncateAt.END);
-        c.addView(sees);
+        if (!mini) {
+            TextView sees = Ui.plain(this, "Games see “PadBridge Player " + p + "”", 12, Ui.DIM);
+            sees.setPadding(0, (int) (4 * d), 0, (int) (8 * d));
+            sees.setSingleLine(true);
+            sees.setEllipsize(TextUtils.TruncateAt.END);
+            c.addView(sees);
+        } else {
+            c.addView(new View(this), new LinearLayout.LayoutParams(1, (int) (8 * d)));
+        }
 
         boolean any = false;
         for (final EngineControl.Controller ctl : status.controllers) {
             if (ctl.player != p) continue;
             any = true;
-            c.addView(controllerRow(ctl, Ui.player(p)));
+            c.addView(controllerRow(ctl, Ui.player(p), mini));
         }
         if (!any) {
-            TextView empty = Ui.plain(this, on ? "No controller yet" : "—", 15, Ui.SUB);
-            empty.setPadding(0, (int) (6 * d), 0, 0);
+            TextView empty = Ui.plain(this, on ? (mini ? "Free" : "No controller yet") : "—", mini ? 13 : 15, Ui.SUB);
+            empty.setPadding(0, (int) ((mini ? 2 : 6) * d), 0, 0);
             c.addView(empty);
             if (on && !compact) {
                 TextView hint = Ui.plain(this, p == 1 && Routing.THOR_FIRST.equals(prefs.mode())
@@ -361,20 +461,30 @@ public class MainActivity extends Activity implements ShizukuClient.Listener {
         return frame;
     }
 
-    private View controllerRow(final EngineControl.Controller ctl, int color) {
+    private View controllerRow(final EngineControl.Controller ctl, int color, boolean mini) {
         LinearLayout row = new LinearLayout(this);
         row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setPadding((int) (10 * d), (int) (8 * d), (int) (8 * d), (int) (8 * d));
+        int pad = (int) ((mini ? 6 : 8) * d);
+        row.setPadding((int) ((mini ? 7 : 10) * d), pad, pad, pad);
         row.setBackground(Ui.round(Color.rgb(0x16, 0x19, 0x1f), 10 * d));
-        row.setFocusable(true);
-        TextView icon = Ui.plain(this, ctl.builtin ? "📱" : "🎮", 20, Color.WHITE);
+        // While swapping, the card takes the tap.
+        row.setFocusable(swapFrom == 0);
+        TextView icon = Ui.plain(this, ctl.builtin ? "📱" : "🎮", mini ? 15 : 20, Color.WHITE);
         row.addView(icon);
         LinearLayout words = new LinearLayout(this);
         words.setOrientation(LinearLayout.VERTICAL);
-        TextView n = Ui.plain(this, ctl.builtin ? "Thor controls" : ctl.name, 15, Color.WHITE);
+        TextView n = Ui.plain(this, ctl.builtin ? "Thor controls" : ctl.name, mini ? 12 : 15, Color.WHITE);
         n.setSingleLine(true);
         n.setEllipsize(TextUtils.TruncateAt.END);
         words.addView(n);
+        if (mini) {
+            LinearLayout.LayoutParams wlp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+            wlp.leftMargin = (int) (6 * d);
+            row.addView(words, wlp);
+            if (prefs.pin(ctl.key) > 0) row.addView(Ui.plain(this, "📌", 10, Color.WHITE));
+            if (!ctl.error.isEmpty()) row.addView(Ui.plain(this, "⚠️", 10, Color.WHITE));
+            return finishRow(row, ctl, 4);
+        }
         List<String> notes = new ArrayList<>();
         notes.add(ctl.builtin ? "Built-in" : ctl.connection);
         if (prefs.pin(ctl.key) > 0) notes.add("📌 Always here");
@@ -388,12 +498,18 @@ public class MainActivity extends Activity implements ShizukuClient.Listener {
         wlp.leftMargin = (int) (10 * d);
         row.addView(words, wlp);
         row.addView(Ui.plain(this, "⋯", 18, Ui.SUB));
-        row.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { controllerMenu(ctl); }
-        });
+        return finishRow(row, ctl, 6);
+    }
+
+    private View finishRow(LinearLayout row, final EngineControl.Controller ctl, int gap) {
+        if (swapFrom == 0) {
+            row.setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View v) { controllerMenu(ctl); }
+            });
+        }
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT);
-        lp.bottomMargin = (int) (6 * d);
+        lp.bottomMargin = (int) (gap * d);
         row.setLayoutParams(lp);
         return row;
     }
@@ -405,8 +521,8 @@ public class MainActivity extends Activity implements ShizukuClient.Listener {
             if (ctl.player <= 0) names.add(ctl.builtin ? "Thor controls" : ctl.name);
         }
         if (names.isEmpty()) {
-            TextView tip = Ui.plain(this, "💡 Map PadBridge Player 1 and 2 once in each emulator. They stay put "
-                    + "whatever controller you hold.", 12, Ui.DIM);
+            TextView tip = Ui.plain(this, "💡 Map PadBridge Player 1 to port 1, Player 2 to port 2 and so on, once in each "
+                    + "emulator. They stay put whatever controllers you hold.", 12, Ui.DIM);
             tip.setPadding((int) (4 * d), (int) (2 * d), 0, 0);
             content.addView(tip);
             return;
@@ -426,38 +542,78 @@ public class MainActivity extends Activity implements ShizukuClient.Listener {
         content.addView(t);
     }
 
-    /** Pick a player for a controller, its button layout, or mark it as the Thor's own. */
+    /**
+     * Pick a player for a controller (a chip per player), its button layout, or mark it as the
+     * Thor's own.
+     */
     private void controllerMenu(final EngineControl.Controller ctl) {
         Haptics.play(this, Haptics.BAR);
         final int pin = prefs.pin(ctl.key);
-        final List<String> items = new ArrayList<>();
-        final List<Integer> actions = new ArrayList<>();
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding((int) (24 * d), (int) (4 * d), (int) (24 * d), 0);
+        TextView head = Ui.plain(this, "ALWAYS PLAYER", 11, Ui.DIM);
+        head.setLetterSpacing(0.1f);
+        head.setPadding(0, 0, 0, (int) (8 * d));
+        box.addView(head);
+        final AlertDialog[] dialog = new AlertDialog[1];
+        LinearLayout chips = new LinearLayout(this);
         for (int p = 1; p <= Routing.MAX_PLAYERS; p++) {
-            items.add((pin == p ? "✅ " : "🎮 ") + "Always Player " + p);
-            actions.add(p);
+            final int player = p;
+            boolean sel = pin == p;
+            TextView chip = Ui.plain(this, String.valueOf(p), 17, sel ? Color.BLACK : Ui.player(p));
+            chip.setTypeface(Typeface.DEFAULT_BOLD);
+            chip.setGravity(Gravity.CENTER);
+            chip.setFocusable(true);
+            GradientDrawable bg = Ui.round(sel ? Ui.player(p) : Ui.BUTTON, 12 * d);
+            if (!sel) bg.setStroke(Math.max(1, (int) (1 * d)), blend(Ui.player(p), Ui.BUTTON, 0.35f));
+            chip.setBackground(bg);
+            chip.setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View v) {
+                    dialog[0].dismiss();
+                    pickFor(ctl, player);
+                }
+            });
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, (int) (44 * d), 1f);
+            lp.setMargins(p == 1 ? 0 : (int) (3 * d), 0, p == Routing.MAX_PLAYERS ? 0 : (int) (3 * d), 0);
+            chips.addView(chip, lp);
         }
-        items.add((pin == Routing.AUTO ? "✅ " : "✨ ") + "Automatic (follows " + MODES[modeIndex()][2] + ")");
-        actions.add(Routing.AUTO);
-        items.add((pin == Routing.OFF ? "✅ " : "🚫 ") + "Leave it to Android");
-        actions.add(Routing.OFF);
-        items.add((prefs.nintendo(ctl.key) ? "✅ " : "🔀 ") + "Nintendo layout (swap A/B and X/Y)");
-        actions.add(100);
-        items.add((ctl.builtin ? "✅ " : "📱 ") + "These are the Thor's own controls");
-        actions.add(101);
-        new AlertDialog.Builder(this)
+        box.addView(chips);
+        View gap = new View(this);
+        box.addView(gap, new LinearLayout.LayoutParams(1, (int) (10 * d)));
+        menuItem(box, dialog, pin == Routing.AUTO, "✨", "Automatic (follows " + MODES[modeIndex()][2] + ")", ctl, Routing.AUTO);
+        menuItem(box, dialog, pin == Routing.OFF, "🚫", "Leave it to Android", ctl, Routing.OFF);
+        menuItem(box, dialog, prefs.nintendo(ctl.key), "🔀", "Nintendo layout (swap A/B and X/Y)", ctl, 100);
+        menuItem(box, dialog, ctl.builtin, "📱", "These are the Thor's own controls", ctl, 101);
+        dialog[0] = new AlertDialog.Builder(this)
                 .setTitle(ctl.builtin ? "Thor controls" : ctl.name)
-                .setItems(items.toArray(new String[0]), new DialogInterface.OnClickListener() {
-                    @Override public void onClick(DialogInterface dialog, int which) {
-                        int a = actions.get(which);
-                        if (a == 100) prefs.setNintendo(ctl.key, !prefs.nintendo(ctl.key));
-                        else if (a == 101) prefs.setBuiltin(ctl.builtin && ctl.key.equals(prefs.builtin()) ? "" : ctl.key);
-                        else prefs.setPin(ctl.key, a);
-                        Haptics.play(MainActivity.this, Haptics.PICK);
-                        changed();
-                    }
-                })
+                .setView(box)
                 .setNegativeButton("Cancel", null)
                 .show();
+    }
+
+    private void menuItem(LinearLayout box, final AlertDialog[] dialog, boolean checked, String icon, String text,
+            final EngineControl.Controller ctl, final int action) {
+        TextView t = Ui.plain(this, (checked ? "✅" : icon) + "  " + text, 17, Color.WHITE);
+        t.setPadding(0, (int) (12 * d), 0, (int) (12 * d));
+        t.setFocusable(true);
+        t.setBackground(Ui.round(Color.TRANSPARENT, 10 * d));
+        t.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                dialog[0].dismiss();
+                pickFor(ctl, action);
+            }
+        });
+        box.addView(t);
+    }
+
+    /** A player (or Automatic, or Leave it to Android), 100 for Nintendo layout, 101 for Thor controls. */
+    private void pickFor(EngineControl.Controller ctl, int a) {
+        if (a == 100) prefs.setNintendo(ctl.key, !prefs.nintendo(ctl.key));
+        else if (a == 101) prefs.setBuiltin(ctl.builtin && ctl.key.equals(prefs.builtin()) ? "" : ctl.key);
+        else prefs.setPin(ctl.key, a);
+        Haptics.play(MainActivity.this, Haptics.PICK);
+        changed();
     }
 
     // ---- Mode and swap --------------------------------------------------------------------------
@@ -512,8 +668,46 @@ public class MainActivity extends Activity implements ShizukuClient.Listener {
         popup.showAsDropDown(modeButton, 0, (int) (8 * d));
     }
 
+    /**
+     * 🔁 Swap: with two players it flips them right away; with more, you tap the two players
+     * to swap.
+     */
+    private void swapPressed() {
+        if (swapFrom != 0 || playerCount() <= 2) {
+            if (swapFrom != 0) swapFrom = 0;
+            else swapOneAndTwo();
+            changed();
+            return;
+        }
+        Haptics.play(this, Haptics.SWAP);
+        swapFrom = -1;
+        changed();
+    }
+
+    private void pickSwap(int p) {
+        Haptics.play(this, Haptics.PICK);
+        if (swapFrom < 0) swapFrom = p;
+        else if (swapFrom == p) swapFrom = -1;
+        else {
+            swapPlayers(swapFrom, p);
+            swapFrom = 0;
+        }
+        changed();
+    }
+
+    /** Swaps two players by fixing their controllers to each other's player. */
+    private void swapPlayers(int a, int b) {
+        Haptics.play(this, Haptics.SWAP);
+        for (EngineControl.Controller ctl : status.controllers) {
+            if (ctl.player == a) prefs.setPin(ctl.key, b);
+            else if (ctl.player == b) prefs.setPin(ctl.key, a);
+        }
+        Toast.makeText(this, "Swapped Player " + Math.min(a, b) + " and Player " + Math.max(a, b)
+                + " 📌", Toast.LENGTH_SHORT).show();
+    }
+
     /** Swaps Players 1 and 2: flips Thor first and Controller first, and any fixed players. */
-    private void swapPlayers() {
+    private void swapOneAndTwo() {
         Haptics.play(this, Haptics.SWAP);
         String m = prefs.mode();
         prefs.setMode(Routing.THOR_FIRST.equals(m) ? Routing.CONTROLLER_FIRST : Routing.THOR_FIRST);
@@ -522,7 +716,6 @@ public class MainActivity extends Activity implements ShizukuClient.Listener {
             if (pin == 1) prefs.setPin(ctl.key, 2);
             else if (pin == 2) prefs.setPin(ctl.key, 1);
         }
-        changed();
         Toast.makeText(this, "Player 1 is now " + (Routing.THOR_FIRST.equals(prefs.mode())
                 ? "the Thor's controls" : "your controller"), Toast.LENGTH_SHORT).show();
     }

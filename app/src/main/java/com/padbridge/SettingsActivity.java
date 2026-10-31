@@ -413,10 +413,17 @@ public class SettingsActivity extends Activity {
     }
 
     private void pickPlayer(final String key, String name, int pin) {
-        final int[] values = {1, 2, 3, 4, Routing.AUTO, Routing.OFF};
-        String[] labels = {"Always Player 1", "Always Player 2", "Always Player 3", "Always Player 4",
-                "Automatic (follows Who is Player 1)", "Leave it to Android"};
-        int checked = 4;
+        final int[] values = new int[Routing.MAX_PLAYERS + 2];
+        String[] labels = new String[values.length];
+        for (int p = 1; p <= Routing.MAX_PLAYERS; p++) {
+            values[p - 1] = p;
+            labels[p - 1] = "Always Player " + p;
+        }
+        values[Routing.MAX_PLAYERS] = Routing.AUTO;
+        labels[Routing.MAX_PLAYERS] = "Automatic (follows Who is Player 1)";
+        values[Routing.MAX_PLAYERS + 1] = Routing.OFF;
+        labels[Routing.MAX_PLAYERS + 1] = "Leave it to Android";
+        int checked = Routing.MAX_PLAYERS;
         for (int i = 0; i < values.length; i++) if (values[i] == pin) checked = i;
         new AlertDialog.Builder(this)
                 .setTitle(name)

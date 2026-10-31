@@ -13,11 +13,11 @@ import org.json.JSONObject;
 
 /**
  * Decides which player each controller is. The same controllers always get the same players,
- * whatever order they connected in, so emulators mapped once to "PadBridge Player 1" and
- * "PadBridge Player 2" never need remapping.
+ * whatever order they connected in, so emulators mapped once to "PadBridge Player 1", "PadBridge
+ * Player 2" and so on never need remapping.
  */
 final class Routing {
-    static final int MAX_PLAYERS = 4;
+    static final int MAX_PLAYERS = 8;
     /** A controller PadBridge leaves alone: Android and games see it as usual. */
     static final int OFF = -1;
     static final int AUTO = 0;
@@ -98,7 +98,7 @@ final class Routing {
     }
 
     /**
-     * The player (1 to 4) for each controller, in the order they connected, or OFF for
+     * The player (1 to 8) for each controller, in the order they connected, or OFF for
      * controllers left to Android (switched off, or more controllers than players).
      */
     static int[] assign(List<InputScan.Device> devices, Config c) {
