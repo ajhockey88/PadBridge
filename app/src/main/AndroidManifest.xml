@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.padbridge"
+    android:versionCode="1"
+    android:versionName="1.0">
+
+    <uses-sdk android:minSdkVersion="31" android:targetSdkVersion="33" />
+
+    <!-- Lets Shizuku offer PadBridge its shell helper, which runs the engine. -->
+    <uses-permission android:name="moe.shizuku.manager.permission.API_V23" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Only for GitHub: PadBridge updates. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
+    <!-- Setup checks for Shizuku and opens it (Android hides other apps without this). -->
+    <queries>
+        <package android:name="moe.shizuku.privileged.api" />
+    </queries>
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:theme="@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen">
+
+        <!-- Opens PadBridge on the bottom screen, wherever it was launched from. -->
+        <activity
+            android:name=".LauncherActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Controllers coming and going change Android's keyboard/navigation configuration,
+             which must not restart (and close) the screen. -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:taskAffinity="com.padbridge.main"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation|touchscreen|uiMode" />
+
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="false"
+            android:label="@string/settings_title"
+            android:taskAffinity="com.padbridge.main"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation|touchscreen|uiMode" />
+
+        <!-- Its own task, so it can sit on the other screen next to the main screen. -->
+        <activity
+            android:name=".TestActivity"
+            android:exported="false"
+            android:label="@string/test_title"
+            android:launchMode="singleTask"
+            android:taskAffinity="com.padbridge.test"
+            android:excludeFromRecents="true"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation|touchscreen|uiMode" />
+
+        <meta-data
+            android:name="moe.shizuku.client.V3_SUPPORT"
+            android:value="true" />
+
+        <provider
+            android:name=".ShizukuBinderProvider"
+            android:authorities="com.padbridge.shizuku"
+            android:enabled="true"
+            android:exported="true"
+            android:multiprocess="false"
+            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
+
+        <receiver
+            android:name=".InstallReceiver"
+            android:exported="false" />
+    </application>
+</manifest>

@@ -1,0 +1,40 @@
+name: Release
+
+# Publishes a GitHub release when a release/v1.0, release/v1.1, ... branch is pushed: tags it
+# v1.0, attaches the APK and removes the branch. The pushed commit carries the signed APK and
+# the release notes in release/, so the signing key never leaves the machine that builds it
+# (see "Releasing" in the README). Check for updates in the app reads these releases.
+
+on:
+  push:
+    branches: ['release/v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Publish release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Check the APK
+        run: |
+          test -f release/PadBridge.apk
+          test -s release/notes.md
+          ls -lh release/PadBridge.apk
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${GITHUB_REF_NAME#release/}"
+          gh release create "$tag" release/PadBridge.apk \
+            --target "$GITHUB_SHA" \
+            --title "PadBridge ${tag#v}" \
+            --notes-file release/notes.md \
+            --latest
+          git push origin --delete "$GITHUB_REF_NAME"
