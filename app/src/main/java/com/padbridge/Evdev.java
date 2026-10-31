@@ -7,7 +7,14 @@ final class Evdev {
     static final int EV_SYN = 0, EV_KEY = 1, EV_ABS = 3;
     static final int SYN_REPORT = 0, SYN_DROPPED = 3;
 
-    static final int KEY_BACK = 158, KEY_MENU = 139, KEY_HOMEPAGE = 172;
+    static final int KEY_BACK = 158, KEY_MENU = 139, KEY_HOMEPAGE = 172, KEY_APPSELECT = 580;
+    /** The Thor's buttons that work Android itself, passed on to it rather than to a player. */
+    static final int[] SYSTEM_KEYS = {KEY_BACK, KEY_HOMEPAGE, KEY_APPSELECT};
+
+    static boolean isSystemKey(int code) {
+        for (int k : SYSTEM_KEYS) if (k == code) return true;
+        return false;
+    }
     static final int BTN_JOYSTICK = 0x120; // BTN_TRIGGER: first of the 16 generic buttons
     static final int BTN_SOUTH = 0x130, BTN_EAST = 0x131, BTN_C = 0x132, BTN_NORTH = 0x133, BTN_WEST = 0x134,
             BTN_Z = 0x135, BTN_TL = 0x136, BTN_TR = 0x137, BTN_TL2 = 0x138, BTN_TR2 = 0x139,

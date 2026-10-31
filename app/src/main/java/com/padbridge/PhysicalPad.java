@@ -11,7 +11,12 @@ import java.lang.reflect.Method;
  * {@link PadMapper}. Closing the node gives the controller back to Android.
  */
 final class PhysicalPad {
-    interface Listener { void onFrame(PhysicalPad pad); }
+    interface Listener {
+        void onFrame(PhysicalPad pad);
+
+        /** The Thor's Back or Home button: it belongs to Android, not to a player. */
+        void onSystemKey(int code, boolean down);
+    }
 
     final InputScan.Device dev;
     final PadMapper mapper;
@@ -86,6 +91,11 @@ final class PhysicalPad {
                             int code = (buf[p + 2] & 0xff) | (buf[p + 3] & 0xff) << 8;
                             int value = (buf[p + 4] & 0xff) | (buf[p + 5] & 0xff) << 8
                                     | (buf[p + 6] & 0xff) << 16 | buf[p + 7] << 24;
+                            if (builtin && type == Evdev.EV_KEY && Evdev.isSystemKey(code)) {
+                                // Held-key repeats (value 2) aren't needed: Android times long presses itself.
+                                if (value != 2) listener.onSystemKey(code, value != 0);
+                                continue;
+                            }
                             if (mapper.handle(type, code, value)) {
                                 frame = true;
                                 reportUs = timestampUs(buf, off, size);

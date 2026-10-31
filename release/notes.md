@@ -1,8 +1,8 @@
-🔢 PadBridge 1.0.2: the number of players always matches what you pick.
+🏠 PadBridge 1.0.3: the Thor's Back and Home buttons work again while PadBridge is on.
 
-## ✨ What's new in 1.0.2
-- 🔢 **Players match:** tapping **−** or **+** quickly could leave PadBridge's engine a step behind, so games saw 5 players while PadBridge showed 4. Every change now reaches the engine
-- 🃏 **Roomier player cards:** with three or four players, the cards drop the "Games see…" line so the controller fits, even with bigger system text
+## ✨ What's new in 1.0.3
+- 🏠 **Back and Home work:** while PadBridge holds the Thor's controls, its Back and Home buttons now go to Android, as they should, instead of to Player 1
+- 🔢 **Players in order:** after changing the number of players, Android could number Player 2 before Player 1, which showed up in emulators as "Player 2 1, Player 1 2". PadBridge now waits for the old pads to be gone, so the numbers line up
 
 ---
 
@@ -21,6 +21,7 @@ PadBridge bridges the Thor's controls and your controllers onto steady player co
 - 🔄 **Updates:** check, see what's new, and install from Settings, or reinstall the current release
 
 ## 📜 Release history
+- **1.0.3:** the Thor's Back and Home buttons work, and players stay in order
 - **1.0.2:** the number of players always matches, and roomier player cards
 - **1.0.1:** no more duplicate player pads
 - **1.0:** first release: the Thor's controls and your controllers as fixed players, up to 8, with rumble
