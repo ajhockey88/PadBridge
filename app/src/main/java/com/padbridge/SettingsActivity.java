@@ -790,6 +790,8 @@ public class SettingsActivity extends Activity {
                         "d=/sdcard/Download; t=$(date +%H%M%S); cat '" + dir + "/engine.log' > $d/padbridge-engine-$t.txt; "
                         + "cat '" + dir + "/status.json' > $d/padbridge-status-$t.txt; "
                         + "cat '" + dir + "/config.json' > $d/padbridge-config-$t.txt; "
+                        + "cat '" + dir + "/guide.txt' > $d/padbridge-guide-$t.txt 2>/dev/null; "
+                        + "uiautomator dump $d/padbridge-ui-$t.xml >/dev/null 2>&1; "
                         + "cat /proc/bus/input/devices > $d/padbridge-devices-$t.txt; "
                         + "getevent -p > $d/padbridge-getevent-$t.txt 2>&1; "
                         + "dumpsys input > $d/padbridge-input-$t.txt; "

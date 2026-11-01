@@ -169,6 +169,10 @@ public class GuideService extends AccessibilityService {
                 handler.postDelayed(this, 400);
                 return;
             }
+            if (n == null && notedStep != step) {
+                notedStep = step;
+                note(spots[step]);
+            }
             boolean was = found;
             int before = step;
             step = at;
@@ -186,7 +190,7 @@ public class GuideService extends AccessibilityService {
     /** The node in the emulator whose words match one of the spot's labels. */
     /** The last search's best match that's off screen (further down a list), if any. */
     private AccessibilityNodeInfo offscreen;
-    private int offscreenScore, scrolls, scrollStep = -1;
+    private int offscreenScore, scrolls, scrollStep = -1, notedStep = -1;
 
     private AccessibilityNodeInfo find(Emulators.Spot spot) {
         offscreen = null;
@@ -266,10 +270,22 @@ public class GuideService extends AccessibilityService {
             scrollStep = step;
             scrolls = 0;
         }
-        if (scrolls >= 6) return false;
+        if (scrolls >= 12) return false;
         find(spot);
         AccessibilityNodeInfo n = offscreen;
-        if (n == null) return false;
+        if (n == null) {
+            // Only for a setting further down a settings page; buttons are never hunted for, so a
+            // game library isn't scrolled about while you open a menu.
+            if (spot.tap) return false;
+            // Not loaded at all (a long list only builds rows near the screen): scroll the page down
+            // to look for it, then back up.
+            AccessibilityNodeInfo list = biggestScrollable();
+            if (list == null) return false;
+            scrolls++;
+            if (scrolls <= 6 && list.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)) return true;
+            if (scrolls <= 6) scrolls = 7; // reached the bottom: go back up
+            return list.performAction(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD);
+        }
         scrolls++;
         if (n.performAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SHOW_ON_SCREEN.getId())) return true;
         Rect r = new Rect(), p = new Rect();
@@ -281,6 +297,70 @@ public class GuideService extends AccessibilityService {
             return a.performAction(up ? AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD : AccessibilityNodeInfo.ACTION_SCROLL_FORWARD);
         }
         return false;
+    }
+
+    /** The emulator's main scrolling list on top: the scrollable node with the most room. */
+    private AccessibilityNodeInfo biggestScrollable() {
+        AccessibilityWindowInfo top = null;
+        for (AccessibilityWindowInfo w : getWindows()) {
+            AccessibilityNodeInfo root = w.getRoot();
+            if (root == null || root.getPackageName() == null || !pkg.contentEquals(root.getPackageName())) continue;
+            if (top == null || w.getLayer() > top.getLayer()) top = w;
+        }
+        if (top == null || top.getRoot() == null) return null;
+        AccessibilityNodeInfo best = null;
+        long area = 0;
+        Rect r = new Rect();
+        ArrayDeque<AccessibilityNodeInfo> queue = new ArrayDeque<>();
+        queue.add(top.getRoot());
+        int seen = 0;
+        while (!queue.isEmpty() && seen++ < 1500) {
+            AccessibilityNodeInfo n = queue.poll();
+            if (n.isScrollable() && n.isVisibleToUser()) {
+                n.getBoundsInScreen(r);
+                long a = (long) r.width() * r.height();
+                if (a > area) {
+                    area = a;
+                    best = n;
+                }
+            }
+            for (int i = 0; i < n.getChildCount(); i++) {
+                AccessibilityNodeInfo c = n.getChild(i);
+                if (c != null) queue.add(c);
+            }
+        }
+        return best;
+    }
+
+    /** Writes the words on the emulator's screen, for diagnostics when a step can't be found. */
+    private void note(Emulators.Spot spot) {
+        StringBuilder b = new StringBuilder("step " + (step + 1) + " (" + spot.hint + ") not found in " + pkg + "\n");
+        for (AccessibilityWindowInfo w : getWindows()) {
+            AccessibilityNodeInfo root = w.getRoot();
+            if (root == null || root.getPackageName() == null || !pkg.contentEquals(root.getPackageName())) continue;
+            b.append("window layer ").append(w.getLayer()).append('\n');
+            ArrayDeque<AccessibilityNodeInfo> queue = new ArrayDeque<>();
+            queue.add(root);
+            int seen = 0;
+            while (!queue.isEmpty() && seen++ < 800) {
+                AccessibilityNodeInfo n = queue.poll();
+                CharSequence t = n.getText(), c = n.getContentDescription();
+                if (t != null || c != null) {
+                    b.append(n.isVisibleToUser() ? "  " : "  (off screen) ").append(t != null ? t : "")
+                            .append(c != null ? " [" + c + "]" : "").append(n.isClickable() ? " (tap)" : "")
+                            .append(n.isScrollable() ? " (scrolls)" : "").append('\n');
+                }
+                for (int i = 0; i < n.getChildCount(); i++) {
+                    AccessibilityNodeInfo ch = n.getChild(i);
+                    if (ch != null) queue.add(ch);
+                }
+            }
+        }
+        try (java.io.FileOutputStream out = new java.io.FileOutputStream(
+                new java.io.File(EngineControl.folder(this), "guide.txt"))) {
+            out.write(b.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        } catch (Exception ignored) {
+        }
     }
 
     /** In the top fifth of the window, and its left or right quarter. */
