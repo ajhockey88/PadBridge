@@ -91,6 +91,11 @@ public class TourActivity extends Activity {
             steps.addAll(Arrays.asList(ALL));
         }
 
+        // The tour needs PadBridge running: the controllers step lists what it sees, and the
+        // emulators only list PadBridge's pads while they exist.
+        if (!prefs.enabled()) prefs.setEnabled(true);
+        EngineControl.pushConfig(this);
+
         mode = prefs.mode();
         style = prefs.style();
         players = prefs.keepPlayers();
@@ -158,7 +163,9 @@ public class TourActivity extends Activity {
             handler.removeCallbacks(this);
             new Thread(new Runnable() {
                 @Override public void run() {
+                    EngineControl.ensureRunning(TourActivity.this);
                     final EngineControl.Status s = EngineControl.status(TourActivity.this);
+                    for (EngineControl.Controller c : s.controllers) prefs.remember(c.key, c.name, c.connection);
                     runOnUiThread(new Runnable() {
                         @Override public void run() {
                             status = s;
@@ -269,6 +276,10 @@ public class TourActivity extends Activity {
                 break;
             case PLAYERS:
                 e.putInt(Prefs.KEY_KEEP_PLAYERS, players).putString(Prefs.KEY_STYLE, style);
+                // Every connected controller joins in, so the next step shows them all.
+                for (EngineControl.Controller c : status.controllers) {
+                    if (c.player <= 0 && prefs.pin(c.key) == Routing.OFF) prefs.setPin(c.key, Routing.AUTO);
+                }
                 break;
             case CONTROLLERS:
                 e.putBoolean(Prefs.KEY_ANNOUNCE, announce);
@@ -403,7 +414,23 @@ public class TourActivity extends Activity {
                 + "main screen.");
         boolean any = false;
         for (final EngineControl.Controller c : status.controllers) {
-            if (c.player <= 0) continue;
+            if (c.player <= 0) {
+                any = true;
+                LinearLayout card = card();
+                LinearLayout row = new LinearLayout(this);
+                row.setGravity(Gravity.CENTER_VERTICAL);
+                row.addView(words(c.builtin ? "Thor controls" : c.name, "Left to Android, so games don't see it as "
+                        + "a PadBridge player"), new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+                row.addView(small("Add", true, new Runnable() {
+                    @Override public void run() {
+                        prefs.setPin(c.key, Routing.AUTO);
+                        EngineControl.pushConfig(TourActivity.this);
+                        shownStatus = "";
+                    }
+                }));
+                card.addView(row);
+                continue;
+            }
             any = true;
             LinearLayout card = card();
             LinearLayout row = new LinearLayout(this);
