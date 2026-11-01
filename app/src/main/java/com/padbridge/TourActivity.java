@@ -92,8 +92,10 @@ public class TourActivity extends Activity {
         }
 
         // The tour needs PadBridge running: the controllers step lists what it sees, and the
-        // emulators only list PadBridge's pads while they exist.
-        if (!prefs.enabled()) prefs.setEnabled(true);
+        // emulators only list PadBridge's pads while they exist. Only when the tour is first opened:
+        // Android can rebuild this screen later (moved display, or reopened from Recents), and that
+        // mustn't turn PadBridge back on after it was turned off.
+        if (savedInstanceState == null && !prefs.enabled()) prefs.setEnabled(true);
         EngineControl.pushConfig(this);
 
         mode = prefs.mode();
