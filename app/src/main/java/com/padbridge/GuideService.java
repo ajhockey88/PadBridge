@@ -173,7 +173,9 @@ public class GuideService extends AccessibilityService {
             // you already went past it. A step is only skipped to when its words are on screen,
             // never for a corner button found by position.
             int from = step;
-            boolean settled = android.os.SystemClock.uptimeMillis() - movedAt > 2500;
+            // No wait when the step was lit up and has just gone (you tapped it and its page left):
+            // the next step can follow straight away.
+            boolean settled = found || android.os.SystemClock.uptimeMillis() - movedAt > 2500;
             if (spots[step].giveWay && step + 1 < spots.length && find(spots[step + 1]) != null && byLabel) {
                 from = step + 1; // the menu this button opens is on screen now
             }
