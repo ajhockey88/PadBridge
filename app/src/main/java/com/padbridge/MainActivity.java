@@ -187,7 +187,7 @@ public class MainActivity extends Activity implements ShizukuClient.Listener {
         modeButton.setText(MODES[modeIndex()][1] + "  " + MODES[modeIndex()][2] + " ▾");
         StringBuilder key = new StringBuilder();
         key.append(needsSetup()).append(EngineControl.stuck()).append(ShizukuClient.isRunning()).append(prefs.enabled()).append(status.alive)
-                .append(prefs.keepPlayers()).append(busy).append(status.error).append(swapFrom);
+                .append(prefs.keepPlayers()).append(busy).append(status.error).append(swapFrom).append(prefs.tourOffered());
         for (EngineControl.Controller c : status.controllers) {
             key.append('|').append(c.key).append(c.player).append(c.active).append(c.builtin).append(c.error)
                     .append(prefs.nintendo(c.key)).append(prefs.pin(c.key));
@@ -199,6 +199,7 @@ public class MainActivity extends Activity implements ShizukuClient.Listener {
             setupCard();
             return;
         }
+        if (!prefs.tourOffered() && demoStatus == null) tourCard();
         statusCard();
         playerCards();
         leftAlone();
@@ -757,6 +758,50 @@ public class MainActivity extends Activity implements ShizukuClient.Listener {
     }
 
     // ---- Setup ----------------------------------------------------------------------------------
+
+    /** Once PadBridge works, offers the setup tour (once; it's in Settings > About after that). */
+    private void tourCard() {
+        LinearLayout c = card(content);
+        GradientDrawable bg = Ui.round(Color.rgb(0x0b, 0x16, 0x20), 14 * d);
+        bg.setStroke((int) (2 * d), Ui.ACCENT);
+        c.setBackground(bg);
+        TextView h = Ui.plain(this, "PadBridge works. Want the best settings for you?", 17, Color.WHITE);
+        h.setTypeface(Typeface.DEFAULT_BOLD);
+        c.addView(h);
+        TextView s = Ui.plain(this, "A short tour asks how you play, sets PadBridge up and shows how to point your "
+                + "emulators at the PadBridge pads. Skip any step you like.", 13, Color.rgb(0xbf, 0xc4, 0xcc));
+        s.setPadding(0, (int) (4 * d), 0, (int) (10 * d));
+        c.addView(s);
+        LinearLayout row = new LinearLayout(this);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        TextView start = Ui.button(this, "Start the tour");
+        start.setTextColor(Color.BLACK);
+        start.setTypeface(Typeface.DEFAULT_BOLD);
+        start.setBackground(Ui.round(Ui.ACCENT, 18 * d));
+        start.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                Haptics.play(MainActivity.this, Haptics.PICK);
+                prefs.setTourOffered();
+                TourActivity.open(MainActivity.this, false);
+            }
+        });
+        row.addView(start);
+        TextView later = Ui.button(this, "Not now");
+        later.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                Haptics.play(MainActivity.this, Haptics.PICK);
+                prefs.setTourOffered();
+                shown = "";
+                refresh();
+                Toast.makeText(MainActivity.this, "The tour is in Settings, About any time", Toast.LENGTH_SHORT).show();
+            }
+        });
+        LinearLayout.LayoutParams llp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT);
+        llp.leftMargin = (int) (8 * d);
+        row.addView(later, llp);
+        c.addView(row);
+    }
 
     private void setupCard() {
         TextView h = Ui.plain(this, "Set up PadBridge", 22, Color.WHITE);

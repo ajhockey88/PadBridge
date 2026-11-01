@@ -1,5 +1,6 @@
 package com.padbridge;
 
+import android.text.TextUtils;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
@@ -129,6 +130,12 @@ public class SettingsActivity extends Activity {
         root.addView(previewPill, plp);
         setContentView(root);
         showTab(tab);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (page != null && tab == 7) showTab(tab); // About: the tour's skipped steps may have changed
     }
 
     /** For screenshots: opens on a given tab. */
@@ -476,6 +483,7 @@ public class SettingsActivity extends Activity {
             + "THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.";
 
     private void aboutSection() {
+        tourSection();
         LinearLayout c = card();
         TextView t = plain("🎮 PadBridge " + versionName(), 16, Color.WHITE);
         t.setTypeface(Typeface.DEFAULT_BOLD);
@@ -509,6 +517,59 @@ public class SettingsActivity extends Activity {
         thanks.setLineSpacing(0, 1.15f);
         thanks.setPadding(0, (int) (4 * d), 0, 0);
         c.addView(thanks);
+    }
+
+    /** The setup tour: run it again, or finish the steps skipped last time. */
+    private void tourSection() {
+        LinearLayout c = card();
+        TextView t = plain("🧭 Setup tour", 16, Color.WHITE);
+        t.setTypeface(Typeface.DEFAULT_BOLD);
+        c.addView(t);
+        TextView s = plain("Asks how you play and picks the best settings, and shows how to set up your emulators. "
+                + "Your current settings are the starting answers.", 13, SUB);
+        s.setPadding(0, (int) (4 * d), 0, (int) (8 * d));
+        c.addView(s);
+        LinearLayout row = new LinearLayout(this);
+        row.addView(tourButton("Run the tour", false));
+        final java.util.List<String> skipped = prefs.tourSkipped();
+        if (!skipped.isEmpty()) {
+            java.util.List<String> names = new ArrayList<>();
+            for (String id : skipped) names.add(TourActivity.stepName(id));
+            TextView k = plain("You skipped " + (skipped.size() == 1 ? "1 step" : skipped.size() + " steps") + ": "
+                    + TextUtils.join(", ", names), 13, Ui.ACCENT_TEXT);
+            k.setPadding(0, 0, 0, (int) (8 * d));
+            c.addView(k);
+            row.addView(tourButton("Finish skipped steps", true));
+            TextView dismiss = action("Dismiss", new Runnable() {
+                @Override public void run() { prefs.clearTourSkipped(); }
+            });
+            dismiss.setTextSize(14);
+            dismiss.setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View v) {
+                    Haptics.play(SettingsActivity.this, Haptics.SETTING);
+                    prefs.clearTourSkipped();
+                    showTab(tab);
+                }
+            });
+            row.addView(dismiss);
+        }
+        c.addView(row);
+    }
+
+    private TextView tourButton(String label, final boolean skippedOnly) {
+        TextView b = Ui.button(this, label);
+        b.setTextSize(14);
+        b.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                Haptics.play(SettingsActivity.this, Haptics.PICK);
+                TourActivity.open(SettingsActivity.this, skippedOnly);
+            }
+        });
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp.rightMargin = (int) (6 * d);
+        b.setLayoutParams(lp);
+        return b;
     }
 
     // ---- Games ------------------------------------------------------------------------------------

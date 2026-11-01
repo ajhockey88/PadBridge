@@ -95,6 +95,20 @@ button works with a controller too.
 and so on for as many players as the game takes, once. The real controllers PadBridge took over
 stay silent, so they don't claim a port of their own.
 
+## 🧭 Setup tour
+
+Once PadBridge works, the main screen offers a short tour (and Settings > About opens it any
+time). It asks who is Player 1, which button positions the Thor uses, how many players and which
+pad type, checks your controllers, sets starting after a restart and picks hotkeys. Every step
+can be skipped; a skipped step keeps its setting and waits in Settings > About.
+
+The **Set up your emulators** step lists the emulators you have installed (RetroArch, Dolphin,
+PPSSPP, AetherSX2/NetherSX2, DuckStation, Switch and 3DS emulators, Lemuroid, Flycast, melonDS,
+Mupen64Plus FZ), with the steps to point each player at its PadBridge pad, and opens the emulator
+on the other screen so the steps stay in view. Emulators keep their controller settings to
+themselves, so PadBridge shows the steps rather than changing them for you. You only do it once:
+the pads keep their names and order.
+
 ## ⚙️ Settings
 
 - 🎮 **Who is Player 1:** Thor first, Controller first or Both Player 1, as in the menu
@@ -120,7 +134,8 @@ stay silent, so they don't claim a port of their own.
   stops it asking about that version.
 - 🔁 **Reinstall:** downloads the latest release and installs it again, for when a release's APK
   was replaced
-- ℹ️ **About:** the version, the license and thanks
+- ℹ️ **About:** the version, the license and thanks, and **Run the tour** (plus **Finish skipped
+  steps** when you skipped any)
 
 Long-press a heading in Settings to save diagnostics to Download (PadBridge's log, the input
 devices and screenshots), for bug reports.
