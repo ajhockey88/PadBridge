@@ -87,7 +87,7 @@ final class EngineControl {
             s.direct = o.optBoolean("direct");
             s.profile = o.optString("profile", "");
             long age = System.currentTimeMillis() - o.optLong("time");
-            s.alive = o.optBoolean("running") && age < 4000 && age > -4000;
+            s.alive = o.optBoolean("running") && age < 6000 && age > -6000; // the engine writes at least every 2 s
             JSONArray list = o.optJSONArray("controllers");
             for (int i = 0; s.alive && list != null && i < list.length(); i++) {
                 JSONObject d = list.getJSONObject(i);

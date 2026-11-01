@@ -149,7 +149,9 @@ final class UinputDevice {
                 byte[] in = new byte[size * 16];
                 byte[] up = new byte[UPLOAD_SIZE], er = new byte[ERASE_SIZE];
                 while (open) {
-                    int n = Native.read(fd, in, in.length, 500);
+                    // Waits for a game's rumble without waking up in between: a long timeout, only so
+                    // the thread ends within seconds after the pad is removed.
+                    int n = Native.read(fd, in, in.length, 10000);
                     if (n < 0) break;
                     for (int off = 0; off + size <= n; off += size) {
                         int p = off + tail;
