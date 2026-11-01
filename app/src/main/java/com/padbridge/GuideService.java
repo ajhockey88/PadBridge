@@ -344,7 +344,7 @@ public class GuideService extends AccessibilityService {
         return false;
     }
 
-    /** The words along the top of the emulator's top window (its title bar), to notice a new page. */
+    /** The words on the emulator's top window, to notice it went to another page. */
     private String titleBar() {
         AccessibilityWindowInfo top = null;
         for (AccessibilityWindowInfo w : getWindows()) {
@@ -361,9 +361,8 @@ public class GuideService extends AccessibilityService {
         int seen = 0;
         while (!queue.isEmpty() && seen++ < 600) {
             AccessibilityNodeInfo n = queue.poll();
-            if (n.isVisibleToUser() && n.getText() != null) {
-                n.getBoundsInScreen(r);
-                if (r.bottom <= win.top + win.height() / 7) b.append(n.getText()).append('|');
+            if (n.isVisibleToUser() && (n.getText() != null || n.getContentDescription() != null)) {
+                b.append(n.getText()).append('/').append(n.getContentDescription()).append('|');
             }
             for (int i = 0; i < n.getChildCount(); i++) {
                 AccessibilityNodeInfo c = n.getChild(i);
@@ -417,9 +416,17 @@ public class GuideService extends AccessibilityService {
         return best;
     }
 
+    /** For diagnostics: what the guide sees right now (Settings' saved diagnostics include it). */
+    static void dump() {
+        if (instance != null && pkg != null && spots != null && step >= 0 && step < spots.length) {
+            instance.note(spots[step]);
+        }
+    }
+
     /** Writes the words on the emulator's screen, for diagnostics when a step can't be found. */
     private void note(Emulators.Spot spot) {
-        StringBuilder b = new StringBuilder("step " + (step + 1) + " (" + spot.hint + ") not found in " + pkg + "\n");
+        StringBuilder b = new StringBuilder("step " + (step + 1) + " (" + spot.hint + ") found " + found
+                + " at " + target + " in " + pkg + "\ntitle " + foundTitle + "\nnow   " + titleBar() + "\n");
         for (AccessibilityWindowInfo w : getWindows()) {
             AccessibilityNodeInfo root = w.getRoot();
             if (root == null || root.getPackageName() == null || !pkg.contentEquals(root.getPackageName())) continue;
@@ -431,7 +438,10 @@ public class GuideService extends AccessibilityService {
                 AccessibilityNodeInfo n = queue.poll();
                 CharSequence t = n.getText(), c = n.getContentDescription();
                 if (t != null || c != null) {
-                    b.append(n.isVisibleToUser() ? "  " : "  (off screen) ").append(t != null ? t : "")
+                    Rect nb = new Rect();
+                    n.getBoundsInScreen(nb);
+                    b.append(n.isVisibleToUser() ? "  " : "  (off screen) ").append(nb.toShortString()).append(' ')
+                            .append(t != null ? t : "")
                             .append(c != null ? " [" + c + "]" : "").append(n.isClickable() ? " (tap)" : "")
                             .append(n.isScrollable() ? " (scrolls)" : "").append('\n');
                 }

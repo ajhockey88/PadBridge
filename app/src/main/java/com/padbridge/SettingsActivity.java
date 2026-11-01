@@ -782,6 +782,7 @@ public class SettingsActivity extends Activity {
             return;
         }
         Toast.makeText(this, "Saving diagnostics…", Toast.LENGTH_SHORT).show();
+        GuideService.dump();
         final String dir = EngineControl.folder(this).getAbsolutePath();
         new Thread(new Runnable() {
             @Override public void run() {
