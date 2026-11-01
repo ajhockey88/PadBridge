@@ -47,6 +47,9 @@ public class GuideService extends AccessibilityService {
     private static long movedAt;
     /** The last search found its spot by its words (not a corner button by position). */
     private boolean byLabel;
+    /** For a corner button: the words in the title bar when it was lit up. */
+    private String foundTitle;
+    private int titleStep = -1;
     /** The window the lit-up spot is in. */
     private int foundWindow = -1;
     private static int step = -1;
@@ -189,6 +192,14 @@ public class GuideService extends AccessibilityService {
                 next();
                 return;
             }
+            // A corner button (a back arrow, a cog): the page's title bar changed since it was lit
+            // up, so it was tapped. Apps often send no tap event for these.
+            if (found && spots[step].corner != 0 && titleStep == step && foundTitle != null
+                    && !foundTitle.equals(titleBar())) {
+                foundTitle = null;
+                next();
+                return;
+            }
             if (n == null && scrollTo(spots[step])) {
                 handler.removeCallbacks(this);
                 handler.postDelayed(this, 400);
@@ -204,6 +215,10 @@ public class GuideService extends AccessibilityService {
             step = at;
             found = n != null;
             if (found) foundWindow = n.getWindowId();
+            if (found && titleStep != step && spots[step].corner != 0) {
+                foundTitle = titleBar();
+                titleStep = step;
+            }
             int display = n != null ? displayOf(n) : emulatorDisplay();
             if (n != null) n.getBoundsInScreen(target);
             else target.setEmpty();
@@ -327,6 +342,35 @@ public class GuideService extends AccessibilityService {
             return a.performAction(up ? AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD : AccessibilityNodeInfo.ACTION_SCROLL_FORWARD);
         }
         return false;
+    }
+
+    /** The words along the top of the emulator's top window (its title bar), to notice a new page. */
+    private String titleBar() {
+        AccessibilityWindowInfo top = null;
+        for (AccessibilityWindowInfo w : getWindows()) {
+            AccessibilityNodeInfo root = w.getRoot();
+            if (root == null || root.getPackageName() == null || !pkg.contentEquals(root.getPackageName())) continue;
+            if (top == null || w.getLayer() > top.getLayer()) top = w;
+        }
+        if (top == null || top.getRoot() == null) return "";
+        Rect win = new Rect(), r = new Rect();
+        top.getBoundsInScreen(win);
+        StringBuilder b = new StringBuilder().append(top.getId()).append('|');
+        ArrayDeque<AccessibilityNodeInfo> queue = new ArrayDeque<>();
+        queue.add(top.getRoot());
+        int seen = 0;
+        while (!queue.isEmpty() && seen++ < 600) {
+            AccessibilityNodeInfo n = queue.poll();
+            if (n.isVisibleToUser() && n.getText() != null) {
+                n.getBoundsInScreen(r);
+                if (r.bottom <= win.top + win.height() / 7) b.append(n.getText()).append('|');
+            }
+            for (int i = 0; i < n.getChildCount(); i++) {
+                AccessibilityNodeInfo c = n.getChild(i);
+                if (c != null) queue.add(c);
+            }
+        }
+        return b.toString();
     }
 
     /** The id of the emulator's top window, or -1. */
