@@ -500,10 +500,11 @@ public class TourActivity extends Activity {
 
     private void emulators() {
         final List<Emulators.Emulator> found = Emulators.installed(this);
-        heading("Set up your emulators", found.isEmpty()
-                ? "PadBridge didn't find an emulator. Here's how to set up any of them."
-                : "Tap one, then Guide me. It opens on the other screen, dimmed, with what to tap next lit up. "
-                        + "Point each player at its PadBridge pad once, and it never needs remapping again.");
+        heading("Set up your emulators", "Tap one, then Guide Me. It opens on the other screen, dimmed, with what to "
+                + "tap next lit up. The guide is only available for ARMSX2 and Eden (including Eden Nightly) for now, "
+                + "but the same process works for every emulator: point each player at its PadBridge pad once, and it "
+                + "never needs remapping again. If you're unsure, you can ask the developer to add other emulators "
+                + "at github.com/ajhockey88/PadBridge/issues.");
         for (Emulators.Emulator e : found) emulator(e);
         if (Emulators.ONLY_TESTED && !found.isEmpty()) return;
         Emulators.Emulator other = new Emulators.Emulator("Emulator", new String[0], Emulators.OTHER);
