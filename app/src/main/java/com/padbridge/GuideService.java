@@ -123,7 +123,8 @@ public class GuideService extends AccessibilityService {
                 && e.getSource() != null) {
             Rect r = new Rect();
             e.getSource().getBoundsInScreen(r);
-            if (Rect.intersects(r, target)) {
+            // The tap landed on the lit-up spot (or the row it's in).
+            if (Rect.intersects(r, target) || r.contains(target.centerX(), target.centerY())) {
                 next();
                 return;
             }
@@ -203,13 +204,30 @@ public class GuideService extends AccessibilityService {
     /** 3 for the exact words, 2 for words it starts with, 0 for no match. Earlier labels win ties. */
     private static int score(AccessibilityNodeInfo n, String[] labels) {
         String t = words(n.getText()), c = words(n.getContentDescription());
+        int s = 0;
         for (String l : labels) {
-            if (l.equals(t) || l.equals(c)) return 3;
+            if (l.equals(t) || l.equals(c)) {
+                s = 6;
+                break;
+            }
         }
-        for (String l : labels) {
-            if (startsWord(t, l) || startsWord(c, l)) return 2;
+        if (s == 0) {
+            for (String l : labels) {
+                if (startsWord(t, l) || startsWord(c, l)) {
+                    s = 4;
+                    break;
+                }
+            }
         }
-        return 0;
+        // Something you can tap beats a heading with the same words (a "Settings" menu item over the
+        // "Settings" page title).
+        if (s > 0 && tappable(n)) s += 1;
+        return s;
+    }
+
+    private static boolean tappable(AccessibilityNodeInfo n) {
+        for (int i = 0; n != null && i < 4; i++, n = n.getParent()) if (n.isClickable()) return true;
+        return false;
     }
 
     private static boolean startsWord(String s, String l) {

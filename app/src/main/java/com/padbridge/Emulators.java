@@ -101,13 +101,20 @@ final class Emulators {
                 new Spot("Open Controller Port 1", "controller port 1", "port 1"),
                 new Spot("Tap Automatic Mapping", "automatic mapping"), new Spot("Choose PadBridge Player 1", "padbridge player 1")));
         l.add(new Emulator("ARMSX2", w("armsx2"),
-                "On ARMSX2's home screen, open Settings.\n"
+                "On the Library screen, open the menu at the top left and tap Settings.\n"
                         + "Open the Controls tab.\n"
-                        + "Your buttons may already be mapped. If not, tap each one and press it on your controller. "
-                        + "You can stop at Start.\n"
-                        + "Scroll down and set On-screen controls to Off.",
-                new Spot("Open Settings", "settings"), new Spot("Open the Controls tab", "controls"),
-                new Spot("Scroll down and set On-screen controls to Off", "on-screen controls", "on screen controls")));
+                        + "Open Player & Rumble.\n"
+                        + "For 2 or more players, make sure All controllers play as Player 1 is off.\n"
+                        + "Find PadBridge Player 1 in the controller list and set it to Player 1.\n"
+                        + "Set PadBridge Player 2 to Player 2. Leave rumble on Auto.\n"
+                        + "Buttons: under Editing, pick Player 1, tap an action, then press that button on your controller. "
+                        + "Usually they're already right.",
+                new Spot("Open the menu at the top left, then tap Settings", "settings"),
+                new Spot("Open the Controls tab", "controls"),
+                new Spot("Open Player & Rumble", "player & rumble", "player and rumble"),
+                new Spot("For 2 or more players, turn this off", "all controllers play as player 1"),
+                new Spot("Set PadBridge Player 1 to Player 1", "padbridge player 1"),
+                new Spot("Set PadBridge Player 2 to Player 2", "padbridge player 2")));
         l.add(new Emulator("DuckStation", w("duckstation"),
                 "Open Settings, then Controllers.\n"
                         + "Open Port 1, tap Automatic Mapping and pick PadBridge Player 1."
