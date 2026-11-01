@@ -105,16 +105,23 @@ final class Emulators {
                         + "Open the Controls tab.\n"
                         + "Open Player & Rumble.\n"
                         + "For 2 or more players, make sure All controllers play as Player 1 is off.\n"
+                        + "Optional, for 3 or more players: turn on Multitap (up to 8 players).\n"
                         + "Find PadBridge Player 1 in the controller list and set it to Player 1.\n"
                         + "Set PadBridge Player 2 to Player 2. Leave rumble on Auto.\n"
+                        + "If you turned on Multitap: set PadBridge Player 3 to Player 3, Player 4 to Player 4, "
+                        + "and so on for each controller.\n"
                         + "Buttons: under Editing, pick Player 1, tap an action, then press that button on your controller. "
                         + "Usually they're already right.",
                 new Spot("Open the menu at the top left, then tap Settings", "settings"),
                 new Spot("Open the Controls tab", "controls"),
                 new Spot("Open Player & Rumble", "player & rumble", "player and rumble"),
                 new Spot("For 2 or more players, turn this off", "all controllers play as player 1"),
+                new Spot("Optional, for 3 or more players: turn on Multitap. Otherwise tap Next",
+                        "multitap (up to 8 players)", "multitap"),
                 new Spot("Set PadBridge Player 1 to Player 1", "padbridge player 1"),
-                new Spot("Set PadBridge Player 2 to Player 2", "padbridge player 2")));
+                new Spot("Set PadBridge Player 2 to Player 2", "padbridge player 2"),
+                new Spot("With Multitap on: set PadBridge Player 3 to Player 3, and so on. Otherwise tap Done",
+                        "padbridge player 3")));
         l.add(new Emulator("DuckStation", w("duckstation"),
                 "Open Settings, then Controllers.\n"
                         + "Open Port 1, tap Automatic Mapping and pick PadBridge Player 1."
