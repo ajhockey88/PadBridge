@@ -797,6 +797,7 @@ public class SettingsActivity extends Activity {
                         + "getevent -p > $d/padbridge-getevent-$t.txt 2>&1; "
                         + "dumpsys input > $d/padbridge-input-$t.txt; "
                         // Crashes of other apps (an emulator closing) and the last few minutes of the log.
+                        + "ps -A -o PID,PPID,USER,STAT,NAME,ARGS > $d/padbridge-ps-$t.txt 2>&1; "
                         + "logcat -d -b crash > $d/padbridge-crash-$t.txt 2>&1; "
                         + "logcat -d -t 3000 > $d/padbridge-logcat-$t.txt 2>&1; "
                         + "i=0; for id in $(dumpsys SurfaceFlinger --display-id | sed -n 's/^Display \\([0-9]*\\).*/\\1/p'); do "

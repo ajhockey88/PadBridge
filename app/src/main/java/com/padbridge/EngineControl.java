@@ -114,19 +114,24 @@ final class EngineControl {
     }
 
     /**
-     * Starts the engine if PadBridge is on and it isn't running (or is an older one). Call off
-     * the main thread.
-     */
-    /**
      * Removes player pads whose engine is gone (it was killed, or the app was uninstalled while
-     * it ran): each pad is a uinput tool process marked PADBRIDGE_PADS, or one left with no parent.
+     * it ran, or it got stuck): stops every engine and every uinput tool process.
      */
-    private static final String UNPLUG_LEFTOVERS = "for p in $(pidof uinput); do "
-            + "if grep -qa '" + VirtualPads.MARK + "=1' /proc/$p/environ 2>/dev/null "
-            + "|| [ \"$(cut -d' ' -f4 /proc/$p/stat 2>/dev/null)\" = 1 ]; then kill $p; fi; done; true";
+    private static final String UNPLUG_LEFTOVERS =
+            // Any PadBridge engine still running, even one whose app was uninstalled since (its
+            // status file is gone with the old install, so the app can't see it): ask, then insist.
+            "pkill -f 'padbridge-keep[a]live'; pkill -x " + PROCESS + "; sleep 1; pkill -9 -x " + PROCESS + "; "
+            // Android's uinput tool runs as app_process with its class in the command line, so
+            // pidof doesn't find it: look through every process's command line.
+            + "for p in /proc/[0-9]*; do case \"$(tr '\\0' ' ' < $p/cmdline 2>/dev/null)\" in "
+            + "*commands.uinput.Uinput*) kill -9 ${p#/proc/} 2>/dev/null;; esac; done; true";
 
     private static boolean unpluggedWhileOff;
 
+    /**
+     * Starts the engine if PadBridge is on and it isn't running (or is an older one). Call off
+     * the main thread.
+     */
     static void ensureRunning(Context context) {
         if (!ShizukuClient.hasPermission()) return;
         if (!new Prefs(context).enabled()) {
@@ -179,7 +184,7 @@ final class EngineControl {
                 + "echo \"$(date +%s)000 engine stopped (exit $c), starting it again\"; sleep 2; done";
         // setsid: the engine outlives this shell, Shizuku's process for it, and the app.
         // The keep-alive's name is put together at run time so this command doesn't match itself.
-        ShizukuClient.runShell(STOP_ALL + "; pm grant " + context.getPackageName()
+        ShizukuClient.runShell(UNPLUG_LEFTOVERS + "; pm grant " + context.getPackageName()
                 + " android.permission.POST_NOTIFICATIONS 2>/dev/null; cd /; n=" + KEEPALIVE_HEAD + "; "
                 + "setsid sh -c '" + loop + "' \"${n}" + KEEPALIVE_TAIL + "\" '" + apk + "' '" + dir + "' '" + lib
                 + "' </dev/null >'" + dir + "/engine.log' 2>&1 &");
