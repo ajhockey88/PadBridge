@@ -93,13 +93,21 @@ final class Emulators {
                         + "PPSSPP is one player, and the mapping works for every PadBridge pad.",
                 new Spot("Open Settings", "settings"), new Spot("Open Controls", "controls"),
                 new Spot("Open Control mapping", "control mapping")));
-        l.add(new Emulator("PS2 emulator", w("armsx2", "aethersx2", "nethersx2", "pcsx2"),
+        l.add(new Emulator("PS2 emulator", w("aethersx2", "nethersx2", "pcsx2"),
                 "Open Settings, then Controller Settings.\n"
                         + "Open Controller Port 1, tap Automatic Mapping and pick PadBridge Player 1."
                         + "\nDo the same for Port 2 with PadBridge Player 2.",
                 new Spot("Open Settings", "settings"), new Spot("Open Controller Settings", "controller settings", "controllers"),
                 new Spot("Open Controller Port 1", "controller port 1", "port 1"),
                 new Spot("Tap Automatic Mapping", "automatic mapping"), new Spot("Choose PadBridge Player 1", "padbridge player 1")));
+        l.add(new Emulator("ARMSX2", w("armsx2"),
+                "On ARMSX2's home screen, open Settings.\n"
+                        + "Open the Controls tab.\n"
+                        + "Your buttons may already be mapped. If not, tap each one and press it on your controller. "
+                        + "You can stop at Start.\n"
+                        + "Scroll down and set On-screen controls to Off.",
+                new Spot("Open Settings", "settings"), new Spot("Open the Controls tab", "controls"),
+                new Spot("Scroll down and set On-screen controls to Off", "on-screen controls", "on screen controls")));
         l.add(new Emulator("DuckStation", w("duckstation"),
                 "Open Settings, then Controllers.\n"
                         + "Open Port 1, tap Automatic Mapping and pick PadBridge Player 1."
