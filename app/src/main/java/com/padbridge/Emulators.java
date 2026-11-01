@@ -107,7 +107,8 @@ final class Emulators {
                         + "Open Player 1 and tap Auto-map a controller.\n"
                         + "Pick PadBridge Player 1.\n"
                         + "Tap the back arrow at the top left.\n"
-                        + "Do the same for Player 2 with PadBridge Player 2, and so on for any more players.",
+                        + "Do the same for Player 2 with PadBridge Player 2.\n"
+                        + "Optional, for 3 or more players: do the same for Player 3 with PadBridge Player 3, and so on.",
                 new Spot(Spot.TOP_RIGHT, "Tap the cog at the top right (Settings)", "settings", "options"),
                 new Spot("Open the controller settings", "input", "controls", "input settings"),
                 new Spot("Open Player 1", "player 1"),
@@ -117,7 +118,9 @@ final class Emulators {
                 new Spot("Now Player 2: open it", "player 2"),
                 new Spot("Tap Auto-map a controller", "auto-map a controller", "auto map a controller", "auto-map"),
                 new Spot("Pick PadBridge Player 2", "padbridge player 2"),
-                new Spot(Spot.TOP_LEFT, "Tap the back arrow at the top left", "navigate up", "back", "go back")));
+                new Spot(Spot.TOP_LEFT, "Tap the back arrow at the top left", "navigate up", "back", "go back"),
+                Spot.look("Optional, for 3 or more players, open Player 3 and set it to PadBridge Player 3 the same way, and so on. Otherwise tap Next Step to finish",
+                        "player 3")));
         l.add(new Emulator("RetroArch", w("retroarch"),
                 "Open Settings, then Input, then RetroPad Binds.\n"
                         + "Open Port 1 Controls and set Device Index to PadBridge Player 1."
