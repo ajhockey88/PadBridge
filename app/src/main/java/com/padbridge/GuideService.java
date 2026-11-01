@@ -156,7 +156,7 @@ public class GuideService extends AccessibilityService {
             // the menu it opened is on screen now.
             int from = step;
             if (spots[step].corner != 0 && step + 1 < spots.length && find(spots[step + 1]) != null) from = step + 1;
-            for (int s = from; s <= Math.min(spots.length - 1, from + 2); s++) {
+            for (int s = from; s <= Math.min(spots.length - 1, from + 1); s++) {
                 AccessibilityNodeInfo m = find(spots[s]);
                 if (m != null) {
                     n = m;
@@ -191,9 +191,16 @@ public class GuideService extends AccessibilityService {
     private AccessibilityNodeInfo find(Emulators.Spot spot) {
         offscreen = null;
         offscreenScore = 0;
+        // Only the emulator's top window: with a list or dialog open, what's behind it doesn't count.
+        AccessibilityWindowInfo top = null;
         for (AccessibilityWindowInfo w : getWindows()) {
             AccessibilityNodeInfo root = w.getRoot();
             if (root == null || root.getPackageName() == null || !pkg.contentEquals(root.getPackageName())) continue;
+            if (top == null || w.getLayer() > top.getLayer()) top = w;
+        }
+        if (top != null) {
+            AccessibilityWindowInfo w = top;
+            AccessibilityNodeInfo root = w.getRoot();
             Rect win = new Rect();
             w.getBoundsInScreen(win);
             AccessibilityNodeInfo best = null, corner = null;
@@ -295,7 +302,7 @@ public class GuideService extends AccessibilityService {
         }
         if (s == 0) {
             for (String l : labels) {
-                if (startsWord(t, l) || startsWord(c, l)) {
+                if (startsWord(t, l) || startsWord(c, l) || hasWords(t, l) || hasWords(c, l)) {
                     s = 4;
                     break;
                 }
@@ -309,6 +316,17 @@ public class GuideService extends AccessibilityService {
 
     private static boolean tappable(AccessibilityNodeInfo n) {
         for (int i = 0; n != null && i < 4; i++, n = n.getParent()) if (n.isClickable()) return true;
+        return false;
+    }
+
+    /** The label as whole words anywhere in it, e.g. "PadBridge Player 1" in "Android/0/PadBridge Player 1". */
+    private static boolean hasWords(String s, String l) {
+        for (int i = s.indexOf(l); i >= 0; i = s.indexOf(l, i + 1)) {
+            boolean before = i == 0 || !Character.isLetterOrDigit(s.charAt(i - 1));
+            int end = i + l.length();
+            boolean after = end == s.length() || !Character.isLetterOrDigit(s.charAt(end));
+            if (before && after) return true;
+        }
         return false;
     }
 
