@@ -50,6 +50,7 @@ public class GuideService extends AccessibilityService {
     /** For a corner button: the words in the title bar when it was lit up. */
     private String foundTitle;
     private int titleStep = -1;
+    private final Rect foundRect = new Rect();
     /** The window the lit-up spot is in. */
     private int foundWindow = -1;
     private static int step = -1;
@@ -194,8 +195,13 @@ public class GuideService extends AccessibilityService {
             }
             // A corner button (a back arrow, a cog): the page's title bar changed since it was lit
             // up, so it was tapped. Apps often send no tap event for these.
-            if (found && spots[step].corner != 0 && titleStep == step && foundTitle != null
-                    && !foundTitle.equals(titleBar())) {
+            // A tab or button that stays put while the page under it changes (ARMSX2's Controls tab):
+            // same for any tap step whose spot is still in the same place but the page changed.
+            Rect now = new Rect();
+            if (n != null) n.getBoundsInScreen(now);
+            boolean samePlace = n != null && at == step && now.equals(foundRect);
+            if (found && spots[step].tap && (spots[step].corner != 0 || samePlace) && titleStep == step
+                    && foundTitle != null && !foundTitle.equals(titleBar())) {
                 foundTitle = null;
                 next();
                 return;
@@ -215,9 +221,10 @@ public class GuideService extends AccessibilityService {
             step = at;
             found = n != null;
             if (found) foundWindow = n.getWindowId();
-            if (found && titleStep != step && spots[step].corner != 0) {
+            if (found && titleStep != step && spots[step].tap) {
                 foundTitle = titleBar();
                 titleStep = step;
+                n.getBoundsInScreen(foundRect);
             }
             int display = n != null ? displayOf(n) : emulatorDisplay();
             if (n != null) n.getBoundsInScreen(target);
