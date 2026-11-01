@@ -796,6 +796,9 @@ public class SettingsActivity extends Activity {
                         + "cat /proc/bus/input/devices > $d/padbridge-devices-$t.txt; "
                         + "getevent -p > $d/padbridge-getevent-$t.txt 2>&1; "
                         + "dumpsys input > $d/padbridge-input-$t.txt; "
+                        // Crashes of other apps (an emulator closing) and the last few minutes of the log.
+                        + "logcat -d -b crash > $d/padbridge-crash-$t.txt 2>&1; "
+                        + "logcat -d -t 3000 > $d/padbridge-logcat-$t.txt 2>&1; "
                         + "i=0; for id in $(dumpsys SurfaceFlinger --display-id | sed -n 's/^Display \\([0-9]*\\).*/\\1/p'); do "
                         + "i=$((i+1)); screencap -d $id -p $d/padbridge-screen-$t-$i.png; done; true");
                 final String log = Engine.read(new java.io.File(dir, "engine.log"));
