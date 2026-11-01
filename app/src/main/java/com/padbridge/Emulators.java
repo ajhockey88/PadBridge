@@ -81,17 +81,19 @@ final class Emulators {
         List<Emulator> l = new ArrayList<>();
         l.add(new Emulator("Switch emulator", w("eden", "yuzu", "citron", "sudachi", "suyu", "torzu", "strato", "skyline"),
                 "Tap the cog at the top right (Settings), then Input (or Controls).\n"
-                        + "Open Player 1, tap Auto-map a controller (pick PadBridge Player 1 if it asks), then tap the back "
-                        + "arrow at the top left." + MANY,
+                        + "Open Player 1 and tap Auto-map a controller.\n"
+                        + "Pick PadBridge Player 1.\n"
+                        + "Tap the back arrow at the top left.\n"
+                        + "Do the same for Player 2 with PadBridge Player 2, and so on for any more players.",
                 new Spot(Spot.TOP_RIGHT, "Tap the cog at the top right (Settings)", "settings", "options"),
                 new Spot("Open the controller settings", "input", "controls", "input settings"),
                 new Spot("Open Player 1", "player 1"),
-                new Spot("Tap Auto-map a controller. If it asks which one, pick PadBridge Player 1",
-                        "auto-map a controller", "auto map a controller", "auto-map"),
+                new Spot("Tap Auto-map a controller", "auto-map a controller", "auto map a controller", "auto-map"),
+                new Spot("Pick PadBridge Player 1", "padbridge player 1"),
                 new Spot(Spot.TOP_LEFT, "Tap the back arrow at the top left", "navigate up", "back", "go back"),
                 new Spot("Now Player 2: open it", "player 2"),
-                new Spot("Tap Auto-map a controller. If it asks which one, pick PadBridge Player 2",
-                        "auto-map a controller", "auto map a controller", "auto-map"),
+                new Spot("Tap Auto-map a controller", "auto-map a controller", "auto map a controller", "auto-map"),
+                new Spot("Pick PadBridge Player 2", "padbridge player 2"),
                 new Spot(Spot.TOP_LEFT, "Tap the back arrow at the top left", "navigate up", "back", "go back")));
         l.add(new Emulator("RetroArch", w("retroarch"),
                 "Open Settings, then Input, then RetroPad Binds.\n"
