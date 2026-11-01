@@ -63,14 +63,16 @@ final class Emulators {
         List<Emulator> l = new ArrayList<>();
         l.add(new Emulator("Switch emulator", w("eden", "yuzu", "citron", "sudachi", "suyu", "torzu", "strato", "skyline"),
                 "Open Settings, then Input (or Controls).\n"
-                        + "Open Player 1 and pick PadBridge Player 1 as the input device. If it asks, press each button once."
+                        + "Open Player 1, tap Auto-map a controller and pick PadBridge Player 1."
                         + MANY,
                 new Spot("Open Settings", "settings", "options", "home options"),
-                new Spot("Open the controller settings", "input", "controls", "input settings", "controller"),
+                new Spot("Open the controller settings", "input", "controls", "input settings"),
                 new Spot("Open Player 1", "player 1"),
-                new Spot("Pick the input device", "input device", "device", "connected controller", "controller"),
+                new Spot("Tap Auto-map a controller", "auto-map a controller", "auto map a controller", "auto-map"),
                 new Spot("Choose PadBridge Player 1", "padbridge player 1"),
-                new Spot("Now Player 2: pick PadBridge Player 2", "player 2", "padbridge player 2")));
+                new Spot("Now Player 2: open it and auto-map PadBridge Player 2", "player 2"),
+                new Spot("Tap Auto-map a controller", "auto-map a controller", "auto map a controller", "auto-map"),
+                new Spot("Choose PadBridge Player 2", "padbridge player 2")));
         l.add(new Emulator("RetroArch", w("retroarch"),
                 "Open Settings, then Input, then RetroPad Binds.\n"
                         + "Open Port 1 Controls and set Device Index to PadBridge Player 1."
