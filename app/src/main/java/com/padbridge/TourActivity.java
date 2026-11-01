@@ -544,25 +544,37 @@ public class TourActivity extends Activity {
             guidePanel(c, e);
             return;
         }
-        String[] lines = e.steps.split("\n");
-        for (int i = 0; i < lines.length; i++) {
-            TextView t = Ui.plain(this, (i + 1) + ".  " + lines[i], 13, Ui.TEXT);
+        if (pkg != null) {
+            LinearLayout buttons = new LinearLayout(this);
+            buttons.setPadding(0, (int) (10 * d), 0, (int) (2 * d));
+            if (e.spots.length > 0) {
+                buttons.addView(small("Guide Me", true, new Runnable() {
+                    @Override public void run() { startGuide(e); }
+                }));
+            }
+            buttons.addView(small("Just Open It", false, new Runnable() {
+                @Override public void run() { openOnOtherScreen(pkg); }
+            }));
+            c.addView(buttons);
+        }
+        // The guide's own steps, so what's listed is exactly what it walks you through.
+        List<String> lines = new ArrayList<>();
+        if (e.spots.length > 0) {
+            for (Emulators.Spot sp : e.spots) lines.add(sp.hint);
+        } else {
+            lines.addAll(Arrays.asList(e.steps.split("\n")));
+        }
+        for (int i = 0; i < lines.size(); i++) {
+            TextView t = Ui.plain(this, (i + 1) + ".  " + lines.get(i), 13, Ui.TEXT);
             t.setLineSpacing(0, 1.1f);
             t.setPadding(0, (int) (i == 0 ? 10 * d : 5 * d), 0, 0);
             c.addView(t);
         }
-        if (pkg == null) return;
-        LinearLayout buttons = new LinearLayout(this);
-        buttons.setPadding(0, (int) (10 * d), 0, 0);
         if (e.spots.length > 0) {
-            buttons.addView(small("Guide me on the other screen", true, new Runnable() {
-                @Override public void run() { startGuide(e); }
-            }));
+            TextView t = Ui.plain(this, e.done, 12, Ui.SUB);
+            t.setPadding(0, (int) (8 * d), 0, 0);
+            c.addView(t);
         }
-        buttons.addView(small("Just open it", false, new Runnable() {
-            @Override public void run() { openOnOtherScreen(pkg); }
-        }));
-        c.addView(buttons);
     }
 
     /** While guiding: the spots, the one lit up now, and Tap it for me / Next / Stop. */
