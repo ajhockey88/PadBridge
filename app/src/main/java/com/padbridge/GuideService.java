@@ -47,6 +47,8 @@ public class GuideService extends AccessibilityService {
     private static long movedAt;
     /** The last search found its spot by its words (not a corner button by position). */
     private boolean byLabel;
+    /** The window the lit-up spot is in. */
+    private int foundWindow = -1;
     private static int step = -1;
     private static boolean found;
     private static Listener listener;
@@ -179,6 +181,14 @@ public class GuideService extends AccessibilityService {
                     break;
                 }
             }
+            // A tap step that was lit up, and whose screen then went away (a pick list that closed as
+            // you picked, a page you tapped your way out of): that tap was the step, so move on.
+            // Some apps send no tap event for it.
+            if (n == null && found && spots[step].tap && foundWindow != -1 && topWindowId() != foundWindow) {
+                foundWindow = -1;
+                next();
+                return;
+            }
             if (n == null && scrollTo(spots[step])) {
                 handler.removeCallbacks(this);
                 handler.postDelayed(this, 400);
@@ -193,6 +203,7 @@ public class GuideService extends AccessibilityService {
             if (at != step) movedAt = android.os.SystemClock.uptimeMillis();
             step = at;
             found = n != null;
+            if (found) foundWindow = n.getWindowId();
             int display = n != null ? displayOf(n) : emulatorDisplay();
             if (n != null) n.getBoundsInScreen(target);
             else target.setEmpty();
@@ -316,6 +327,17 @@ public class GuideService extends AccessibilityService {
             return a.performAction(up ? AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD : AccessibilityNodeInfo.ACTION_SCROLL_FORWARD);
         }
         return false;
+    }
+
+    /** The id of the emulator's top window, or -1. */
+    private int topWindowId() {
+        AccessibilityWindowInfo top = null;
+        for (AccessibilityWindowInfo w : getWindows()) {
+            AccessibilityNodeInfo root = w.getRoot();
+            if (root == null || root.getPackageName() == null || !pkg.contentEquals(root.getPackageName())) continue;
+            if (top == null || w.getLayer() > top.getLayer()) top = w;
+        }
+        return top != null ? top.getId() : -1;
     }
 
     /** The emulator's main scrolling list on top: the scrollable node with the most room. */
