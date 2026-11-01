@@ -164,6 +164,11 @@ public class GuideService extends AccessibilityService {
                     break;
                 }
             }
+            if (n == null && scrollTo(spots[step])) {
+                handler.removeCallbacks(this);
+                handler.postDelayed(this, 400);
+                return;
+            }
             boolean was = found;
             int before = step;
             step = at;
@@ -179,7 +184,13 @@ public class GuideService extends AccessibilityService {
     };
 
     /** The node in the emulator whose words match one of the spot's labels. */
+    /** The last search's best match that's off screen (further down a list), if any. */
+    private AccessibilityNodeInfo offscreen;
+    private int offscreenScore, scrolls, scrollStep = -1;
+
     private AccessibilityNodeInfo find(Emulators.Spot spot) {
+        offscreen = null;
+        offscreenScore = 0;
         for (AccessibilityWindowInfo w : getWindows()) {
             AccessibilityNodeInfo root = w.getRoot();
             if (root == null || root.getPackageName() == null || !pkg.contentEquals(root.getPackageName())) continue;
@@ -194,10 +205,25 @@ public class GuideService extends AccessibilityService {
             int seen = 0;
             while (!queue.isEmpty() && seen++ < 1500) {
                 AccessibilityNodeInfo n = queue.poll();
-                if (!n.isVisibleToUser()) continue;
+                boolean visible = n.isVisibleToUser();
                 n.getBoundsInScreen(r);
                 boolean inCorner = spot.corner == 0 || inCorner(r, win, spot.corner);
                 int score = inCorner ? score(n, spot.labels) : 0;
+                // A step that's a tap only lights up something you can tap, never a heading with
+                // the same words (ARMSX2's "Settings" page title is not its Settings button).
+                if (spot.tap && !tappable(n)) score = 0;
+                if (!visible) {
+                    // Further down a list: remembered so the guide can scroll it into view.
+                    if (score > offscreenScore) {
+                        offscreenScore = score;
+                        offscreen = n;
+                    }
+                    for (int i = 0; i < n.getChildCount(); i++) {
+                        AccessibilityNodeInfo c = n.getChild(i);
+                        if (c != null) queue.add(c);
+                    }
+                    continue;
+                }
                 if (score > bestScore) {
                     bestScore = score;
                     best = n;
@@ -222,6 +248,32 @@ public class GuideService extends AccessibilityService {
             if (corner != null) return corner;
         }
         return null;
+    }
+
+    /**
+     * The step's spot is in the emulator but scrolled out of view: scrolls it into view, a few
+     * tries per step. True if it scrolled.
+     */
+    private boolean scrollTo(Emulators.Spot spot) {
+        if (scrollStep != step) {
+            scrollStep = step;
+            scrolls = 0;
+        }
+        if (scrolls >= 6) return false;
+        find(spot);
+        AccessibilityNodeInfo n = offscreen;
+        if (n == null) return false;
+        scrolls++;
+        if (n.performAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SHOW_ON_SCREEN.getId())) return true;
+        Rect r = new Rect(), p = new Rect();
+        n.getBoundsInScreen(r);
+        for (AccessibilityNodeInfo a = n.getParent(); a != null; a = a.getParent()) {
+            if (!a.isScrollable()) continue;
+            a.getBoundsInScreen(p);
+            boolean up = r.bottom <= p.top;
+            return a.performAction(up ? AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD : AccessibilityNodeInfo.ACTION_SCROLL_FORWARD);
+        }
+        return false;
     }
 
     /** In the top fifth of the window, and its left or right quarter. */

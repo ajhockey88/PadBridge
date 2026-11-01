@@ -26,6 +26,8 @@ final class Emulators {
         final String[] labels;
         /** For an icon button: the corner it's in, so it's found even with no words on it. 0: anywhere. */
         final int corner;
+        /** Only something you can tap counts (not a heading with the same words). */
+        boolean tap = true;
 
         Spot(String hint, String... labels) { this(0, hint, labels); }
 
@@ -33,6 +35,13 @@ final class Emulators {
             this.corner = corner;
             this.hint = hint;
             this.labels = labels;
+        }
+
+        /** A spot that's a setting's name rather than a button: lit up whether or not it's tappable. */
+        static Spot look(String hint, String... labels) {
+            Spot s = new Spot(hint, labels);
+            s.tap = false;
+            return s;
         }
     }
 
@@ -125,12 +134,12 @@ final class Emulators {
                 new Spot("Tap Settings", "settings"),
                 new Spot("Open the Controls tab", "controls"),
                 new Spot("Open Player & Rumble", "player & rumble", "player and rumble"),
-                new Spot("For 2 or more players, turn this off", "all controllers play as player 1"),
-                new Spot("Optional, for 3 or more players: turn on Multitap. Otherwise tap Next",
+                Spot.look("For 2 or more players, turn this off", "all controllers play as player 1"),
+                Spot.look("Optional, for 3 or more players: turn on Multitap. Otherwise tap Next",
                         "multitap (up to 8 players)", "multitap"),
-                new Spot("Set PadBridge Player 1 to Player 1", "padbridge player 1"),
-                new Spot("Set PadBridge Player 2 to Player 2", "padbridge player 2"),
-                new Spot("With Multitap on: set PadBridge Player 3 to Player 3, and so on. Otherwise tap Next to finish",
+                Spot.look("Set PadBridge Player 1 to Player 1", "padbridge player 1"),
+                Spot.look("Set PadBridge Player 2 to Player 2", "padbridge player 2"),
+                Spot.look("With Multitap on: set PadBridge Player 3 to Player 3, and so on. Otherwise tap Next to finish",
                         "padbridge player 3")));
         l.add(new Emulator("DuckStation", w("duckstation"),
                 "Open Settings, then Controllers.\n"
