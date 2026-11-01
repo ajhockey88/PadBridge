@@ -55,7 +55,9 @@ final class Prefs {
     /** The tour's steps the user skipped, to finish later from Settings > About. */
     java.util.List<String> tourSkipped() {
         java.util.List<String> out = new java.util.ArrayList<>();
-        for (String id : sp.getString(KEY_TOUR_SKIPPED, "").split(",")) if (!id.isEmpty()) out.add(id);
+        for (String id : sp.getString(KEY_TOUR_SKIPPED, "").split(","))
+            // Steps the tour no longer has are left out.
+            if (!id.isEmpty() && !id.equals("welcome") && !id.equals("controllers") && !id.equals("hotkeys")) out.add(id);
         return out;
     }
 

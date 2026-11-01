@@ -41,7 +41,7 @@ public class TourActivity extends Activity {
     static final String WELCOME = "welcome", PLAYER1 = "player1", THOR = "thor", PLAYERS = "players",
             CONTROLLERS = "controllers", RESTART = "restart", EMULATORS = "emulators", HOTKEYS = "hotkeys",
             DONE = "done";
-    private static final String[] ALL = {PLAYER1, THOR, PLAYERS, RESTART, EMULATORS, HOTKEYS, DONE};
+    private static final String[] ALL = {PLAYER1, THOR, PLAYERS, RESTART, EMULATORS, DONE};
 
     /** A step's name, as Settings > About lists the skipped ones. */
     static String stepName(String id) {
