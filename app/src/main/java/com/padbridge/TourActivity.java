@@ -505,6 +505,7 @@ public class TourActivity extends Activity {
                 : "Tap one, then Guide me. It opens on the other screen, dimmed, with what to tap next lit up. "
                         + "Point each player at its PadBridge pad once, and it never needs remapping again.");
         for (Emulators.Emulator e : found) emulator(e);
+        if (Emulators.ONLY_TESTED && !found.isEmpty()) return;
         Emulators.Emulator other = new Emulators.Emulator("Emulator", new String[0], Emulators.OTHER);
         other.name = found.isEmpty() ? "Any emulator" : "Another emulator";
         emulator(other);

@@ -204,7 +204,8 @@ final class Emulators {
             if (pkg.equals(context.getPackageName()) || !seen.add(pkg)) continue;
             String label = String.valueOf(r.loadLabel(pm));
             Emulator e = match(known, pkg, label);
-            if (e == null && looksLikeEmulator(pkg, label)) e = other;
+            if (e == null && looksLikeEmulator(pkg, label) && !ONLY_TESTED) e = other;
+            if (e != null && ONLY_TESTED && !tested(e, pkg, label)) e = null;
             if (e != null) out.add(e.found(label, pkg));
         }
         java.util.Collections.sort(out, new java.util.Comparator<Emulator>() {
@@ -233,6 +234,19 @@ final class Emulators {
             if (s.equals("emu") || s.startsWith("emulator") || s.endsWith("emu") && s.length() >= 4
                     || s.endsWith("sx2") || s.endsWith("emulation")) return true;
         }
+        return false;
+    }
+
+    /**
+     * For now the tour only lists the emulators whose steps have been checked on a Thor: Eden
+     * (and Eden Nightly) and ARMSX2. The others' steps stay here for when they're checked.
+     */
+    static final boolean ONLY_TESTED = true;
+
+    private static boolean tested(Emulator e, String pkg, String label) {
+        if (e.kind.equals("ARMSX2")) return true;
+        if (!e.kind.equals("Switch emulator")) return false;
+        for (String t : (pkg + " " + label).toLowerCase(Locale.ROOT).split("[^a-z0-9]+")) if (t.equals("eden")) return true;
         return false;
     }
 
