@@ -76,7 +76,7 @@ final class Emulators {
         final String steps;
         final Spot[] spots;
         /** What the guide says when its steps are done. */
-        String done = "All set. Repeat the process for any additional players.";
+        String done = "All Set";
         /** Once found: the app's name and app id. */
         String name, pkg;
 

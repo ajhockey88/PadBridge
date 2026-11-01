@@ -41,7 +41,7 @@ public class TourActivity extends Activity {
     static final String WELCOME = "welcome", PLAYER1 = "player1", THOR = "thor", PLAYERS = "players",
             CONTROLLERS = "controllers", RESTART = "restart", EMULATORS = "emulators", HOTKEYS = "hotkeys",
             DONE = "done";
-    private static final String[] ALL = {WELCOME, PLAYER1, THOR, PLAYERS, CONTROLLERS, RESTART, EMULATORS, HOTKEYS, DONE};
+    private static final String[] ALL = {PLAYER1, THOR, PLAYERS, CONTROLLERS, RESTART, EMULATORS, HOTKEYS, DONE};
 
     /** A step's name, as Settings > About lists the skipped ones. */
     static String stepName(String id) {
@@ -588,7 +588,7 @@ public class TourActivity extends Activity {
             t.setPadding(0, (int) (i == 0 ? 10 * d : 5 * d), 0, 0);
             c.addView(t);
         }
-        TextView state = Ui.plain(this, now < 0 ? e.done + " Then tap Done."
+        TextView state = Ui.plain(this, now < 0 ? e.done + ". Tap Done."
                 : guideFound ? "Lit up on the other screen. Tap it there, or tap it for me."
                 : "Looking for it on the other screen. If it's further down, scroll to it there, or tap Next if the "
                         + "emulator calls it something else.", 12, Ui.ACCENT_TEXT);
