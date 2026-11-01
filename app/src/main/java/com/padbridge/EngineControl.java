@@ -117,8 +117,26 @@ final class EngineControl {
      * Starts the engine if PadBridge is on and it isn't running (or is an older one). Call off
      * the main thread.
      */
+    /**
+     * Removes player pads whose engine is gone (it was killed, or the app was uninstalled while
+     * it ran): each pad is a uinput tool process marked PADBRIDGE_PADS, or one left with no parent.
+     */
+    private static final String UNPLUG_LEFTOVERS = "for p in $(pidof uinput); do "
+            + "if grep -qa '" + VirtualPads.MARK + "=1' /proc/$p/environ 2>/dev/null "
+            + "|| [ \"$(cut -d' ' -f4 /proc/$p/stat 2>/dev/null)\" = 1 ]; then kill $p; fi; done; true";
+
+    private static boolean unpluggedWhileOff;
+
     static void ensureRunning(Context context) {
-        if (!new Prefs(context).enabled() || !ShizukuClient.hasPermission()) return;
+        if (!ShizukuClient.hasPermission()) return;
+        if (!new Prefs(context).enabled()) {
+            // Off: make sure no pads were left behind, once per app start (and on every Turn off).
+            if (!unpluggedWhileOff && !status(context).alive) {
+                unpluggedWhileOff = true;
+                ShizukuClient.runShell(UNPLUG_LEFTOVERS);
+            }
+            return;
+        }
         Status s = status(context);
         if (s.alive && s.version == Engine.VERSION) {
             failedStarts = 0;
@@ -179,6 +197,8 @@ final class EngineControl {
             // The engine stops by itself on the new config; this is in case it's stuck.
             SystemClock.sleep(1500);
             ShizukuClient.runShell(status(context).alive ? STOP_ALL : "pkill -f 'padbridge-keep[a]live'");
+            SystemClock.sleep(500);
+            ShizukuClient.runShell(UNPLUG_LEFTOVERS);
         }
     }
 
