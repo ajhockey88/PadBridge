@@ -3,4 +3,6 @@
     <string name="app_name">PadBridge</string>
     <string name="settings_title">PadBridge settings</string>
     <string name="test_title">PadBridge controller test</string>
+    <string name="guide_name">PadBridge emulator guide</string>
+    <string name="guide_description">Only while the setup tour guides you through an emulator\'s controller settings: dims that emulator\'s screen and lights up what to tap next, and can tap it for you. It looks at nothing else and does nothing at any other time.</string>
 </resources>

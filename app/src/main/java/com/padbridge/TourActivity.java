@@ -20,6 +20,7 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -232,6 +233,10 @@ public class TourActivity extends Activity {
 
     private void go(int by) {
         Haptics.play(this, Haptics.PICK);
+        if (guiding != null) {
+            guiding = null;
+            GuideService.stop();
+        }
         index = Math.max(0, Math.min(steps.size() - 1, index + by));
         show();
     }
@@ -469,24 +474,34 @@ public class TourActivity extends Activity {
     private void emulators() {
         final List<Emulators.Emulator> found = Emulators.installed(this);
         heading("Set up your emulators", found.isEmpty()
-                ? "PadBridge didn't find an emulator it knows. Here's how to set up any of them."
-                : "Tap one to see its steps and open it on the other screen. Point each player at its PadBridge "
-                        + "pad once, and it never needs remapping again.");
-        for (final Emulators.Emulator e : found) emulator(e.name, e.steps, e.installed);
-        emulator(found.isEmpty() ? "Any emulator" : "Another emulator", Emulators.OTHER, null);
-        tip("Emulators keep their controller settings to themselves, so PadBridge shows you the steps rather than "
-                + "changing them for you.");
+                ? "PadBridge didn't find an emulator. Here's how to set up any of them."
+                : "Tap one, then Guide me. It opens on the other screen, dimmed, with what to tap next lit up. "
+                        + "Point each player at its PadBridge pad once, and it never needs remapping again.");
+        for (Emulators.Emulator e : found) emulator(e);
+        Emulators.Emulator other = new Emulators.Emulator("Emulator", new String[0], Emulators.OTHER);
+        other.name = found.isEmpty() ? "Any emulator" : "Another emulator";
+        emulator(other);
     }
 
-    private void emulator(final String name, String steps, final String pkg) {
-        final String id = pkg != null ? pkg : name;
-        boolean open = openEmulators.contains(id);
+    /** The emulator being guided through on the other screen, or null. */
+    private String guiding;
+    private boolean guideFound;
+
+    private void emulator(final Emulators.Emulator e) {
+        final String pkg = e.pkg;
+        final String id = pkg != null ? pkg : e.name;
+        boolean open = openEmulators.contains(id) || pkg != null && pkg.equals(guiding);
         LinearLayout c = card();
         c.setFocusable(true);
+        if (pkg != null && pkg.equals(guiding)) {
+            GradientDrawable bg = Ui.round(Ui.CARD, 12 * d);
+            bg.setStroke((int) (2 * d), Ui.ACCENT);
+            c.setBackground(bg);
+        }
         LinearLayout row = new LinearLayout(this);
         row.setGravity(Gravity.CENTER_VERTICAL);
-        row.addView(words(name, pkg != null ? "Installed" : "Steps that work for most"),
-                new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        String sub = pkg == null ? "Steps that work for most" : e.kind.equals(e.name) ? "Installed" : e.kind;
+        row.addView(words(e.name, sub), new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         row.addView(Ui.plain(this, open ? "▴" : "▾", 16, Ui.SUB));
         c.addView(row);
         c.setOnClickListener(new View.OnClickListener() {
@@ -497,7 +512,11 @@ public class TourActivity extends Activity {
             }
         });
         if (!open) return;
-        String[] lines = steps.split("\n");
+        if (pkg != null && pkg.equals(guiding) && e.spots.length > 0) {
+            guidePanel(c, e);
+            return;
+        }
+        String[] lines = e.steps.split("\n");
         for (int i = 0; i < lines.length; i++) {
             TextView t = Ui.plain(this, (i + 1) + ".  " + lines[i], 13, Ui.TEXT);
             t.setLineSpacing(0, 1.1f);
@@ -505,15 +524,119 @@ public class TourActivity extends Activity {
             c.addView(t);
         }
         if (pkg == null) return;
-        TextView go = Ui.button(this, "Open " + name + " on the other screen");
-        go.setTextSize(13);
-        go.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { openOnOtherScreen(pkg); }
+        LinearLayout buttons = new LinearLayout(this);
+        buttons.setPadding(0, (int) (10 * d), 0, 0);
+        if (e.spots.length > 0) {
+            buttons.addView(small("Guide me on the other screen", true, new Runnable() {
+                @Override public void run() { startGuide(e); }
+            }));
+        }
+        buttons.addView(small("Just open it", false, new Runnable() {
+            @Override public void run() { openOnOtherScreen(pkg); }
+        }));
+        c.addView(buttons);
+    }
+
+    /** While guiding: the spots, the one lit up now, and Tap it for me / Next / Stop. */
+    private void guidePanel(LinearLayout c, Emulators.Emulator e) {
+        int now = GuideService.step();
+        for (int i = 0; i < e.spots.length; i++) {
+            boolean cur = i == now, done = now < 0 || i < now;
+            TextView t = Ui.plain(this, (done ? "✓  " : (i + 1) + ".  ") + e.spots[i].hint, 13,
+                    cur ? Color.WHITE : done ? Ui.GREEN : Ui.SUB);
+            if (cur) t.setTypeface(Typeface.DEFAULT_BOLD);
+            t.setPadding(0, (int) (i == 0 ? 10 * d : 5 * d), 0, 0);
+            c.addView(t);
+        }
+        TextView state = Ui.plain(this, now < 0 ? "All done for Player 1. Do the other players the same way, then Stop."
+                : guideFound ? "Lit up on the other screen. Tap it there, or tap it for me."
+                : "Looking for it on the other screen. If it's further down, scroll to it there, or tap Next if the "
+                        + "emulator calls it something else.", 12, Ui.ACCENT_TEXT);
+        state.setLineSpacing(0, 1.1f);
+        state.setPadding(0, (int) (10 * d), 0, 0);
+        c.addView(state);
+        LinearLayout buttons = new LinearLayout(this);
+        buttons.setPadding(0, (int) (10 * d), 0, 0);
+        if (now >= 0 && guideFound) {
+            buttons.addView(small("Tap it for me", true, new Runnable() {
+                @Override public void run() {
+                    if (!GuideService.tap()) Toast.makeText(TourActivity.this, "Couldn't tap it. Tap it on the other "
+                            + "screen", Toast.LENGTH_SHORT).show();
+                }
+            }));
+        }
+        if (now >= 0) buttons.addView(small("Next", false, new Runnable() {
+            @Override public void run() { GuideService.next(); }
+        }));
+        buttons.addView(small(now < 0 ? "Done" : "Stop", now < 0, new Runnable() {
+            @Override public void run() { stopGuide(); }
+        }));
+        c.addView(buttons);
+    }
+
+    private void startGuide(final Emulators.Emulator e) {
+        new Thread(new Runnable() {
+            @Override public void run() {
+                final boolean on = GuideService.enable(TourActivity.this);
+                runOnUiThread(new Runnable() {
+                    @Override public void run() {
+                        if (!on) {
+                            Toast.makeText(TourActivity.this, "Turn on PadBridge emulator guide here, then come back",
+                                    Toast.LENGTH_LONG).show();
+                            try {
+                                startActivity(new Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS));
+                            } catch (RuntimeException ignored) {
+                            }
+                            return;
+                        }
+                        guiding = e.pkg;
+                        guideFound = false;
+                        GuideService.start(e.pkg, e.spots, new GuideService.Listener() {
+                            @Override public void onGuideStep(int step, boolean found) {
+                                guideFound = found;
+                                if (steps.get(index).equals(EMULATORS)) fillBody(EMULATORS);
+                            }
+                        });
+                        openOnOtherScreen(e.pkg);
+                        fillBody(EMULATORS);
+                    }
+                });
+            }
+        }, "PadBridge guide").start();
+    }
+
+    private void stopGuide() {
+        guiding = null;
+        GuideService.stop();
+        fillBody(EMULATORS);
+    }
+
+    @Override
+    protected void onDestroy() {
+        GuideService.stop();
+        super.onDestroy();
+    }
+
+    private TextView small(String label, boolean primary, final Runnable run) {
+        TextView b = Ui.button(this, label);
+        b.setTextSize(13);
+        b.setSingleLine(true);
+        if (primary) {
+            b.setTextColor(Color.BLACK);
+            b.setTypeface(Typeface.DEFAULT_BOLD);
+            b.setBackground(Ui.round(Ui.ACCENT, 18 * d));
+        }
+        b.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                Haptics.play(TourActivity.this, Haptics.PICK);
+                run.run();
+            }
         });
-        LinearLayout.LayoutParams glp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT);
-        glp.topMargin = (int) (10 * d);
-        c.addView(go, glp);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp.rightMargin = (int) (6 * d);
+        b.setLayoutParams(lp);
+        return b;
     }
 
     /** Opens an app on the screen PadBridge isn't on, so the steps stay in view next to it. */

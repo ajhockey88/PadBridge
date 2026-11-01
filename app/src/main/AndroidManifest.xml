@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.padbridge"
-    android:versionCode="12"
+    android:versionCode="13"
     android:versionName="1.1">
 
     <uses-sdk android:minSdkVersion="31" android:targetSdkVersion="33" />
@@ -76,6 +76,20 @@
             android:taskAffinity="com.padbridge.test"
             android:excludeFromRecents="true"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation|touchscreen|uiMode" />
+
+        <!-- The setup tour's emulator guide: lights up what to tap in an emulator's settings. -->
+        <service
+            android:name=".GuideService"
+            android:exported="false"
+            android:label="@string/guide_name"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/guide_service" />
+        </service>
 
         <meta-data
             android:name="moe.shizuku.client.V3_SUPPORT"
