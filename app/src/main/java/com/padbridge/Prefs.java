@@ -20,6 +20,7 @@ final class Prefs {
     static final String KEY_BOTH_SCREENS = "both_screens";
     static final String KEY_ANNOUNCE = "announce";
     static final String KEY_SWAP_SCREENS = "swap_screens";
+    static final String KEY_TOUR_OFFERED = "tour_offered", KEY_TOUR_SKIPPED = "tour_skipped";
     private static final String KEY_PINS = "pins", KEY_NINTENDO = "nintendo", KEY_BUILTIN = "builtin",
             KEY_KNOWN = "known", KEY_PADS = "pads", KEY_PROFILES = "profiles", KEY_HOTKEYS = "hotkeys";
 
@@ -46,6 +47,26 @@ final class Prefs {
     boolean bothScreens() { return sp.getBoolean(KEY_BOTH_SCREENS, true); }
     /** PadBridge on the top screen, the test on the bottom. */
     boolean swapScreens() { return sp.getBoolean(KEY_SWAP_SCREENS, false); }
+
+    /** The setup tour was offered (or run), so the main screen stops offering it. */
+    boolean tourOffered() { return sp.getBoolean(KEY_TOUR_OFFERED, false); }
+    void setTourOffered() { sp.edit().putBoolean(KEY_TOUR_OFFERED, true).apply(); }
+
+    /** The tour's steps the user skipped, to finish later from Settings > About. */
+    java.util.List<String> tourSkipped() {
+        java.util.List<String> out = new java.util.ArrayList<>();
+        for (String id : sp.getString(KEY_TOUR_SKIPPED, "").split(",")) if (!id.isEmpty()) out.add(id);
+        return out;
+    }
+
+    void setTourSkipped(String step, boolean skipped) {
+        java.util.List<String> all = tourSkipped();
+        all.remove(step);
+        if (skipped) all.add(step);
+        sp.edit().putString(KEY_TOUR_SKIPPED, android.text.TextUtils.join(",", all)).apply();
+    }
+
+    void clearTourSkipped() { sp.edit().remove(KEY_TOUR_SKIPPED).apply(); }
 
     /** The player a controller is fixed to, Routing.AUTO, or Routing.OFF. */
     int pin(String key) { return object(KEY_PINS).optInt(key, Routing.AUTO); }

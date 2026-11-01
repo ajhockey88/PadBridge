@@ -1,20 +1,17 @@
-🌉 PadBridge 1.0: use the Thor's controls and your controllers together, without remapping your emulators. Now faster, with button mapping, game profiles and hotkeys, and back on by itself after a restart.
+🧭 PadBridge 1.1: a setup tour that picks the best settings for how you play, plus help setting up your emulators, and an easier time for your battery.
 
-## ✨ What's in 1.0
-- 🎮 **Fixed players:** the Thor's controls and every controller you connect become **PadBridge Player 1** to **8**, the same way every time, so you map each emulator once
-- ⚡ **Fast:** a press goes from your controller to its player pad in one step, with nothing in between. The speed readout times that whole trip, to a hundredth of a millisecond
-- 🎛️ **Button mapping per controller:** swap any buttons or turn one off, for one controller only. Tap **Remap** and just press the button you want to change
-- 🎯 **Game profiles:** give a game or emulator its own Player 1 and button map. They switch on by themselves while it's in front
-- ⌨️ **Hotkeys:** Home, Back, swap Players 1 and 2, or open PadBridge with a button combo like Select + Start, from any controller
-- 💡 **Which player am I?:** a controller buzzes once per player number when it connects or changes player, and DualSense, DualShock 4, Switch Pro and Xbox 360 lights show its player where Android allows it
-- 🔁 **Starts by itself:** back after a restart as soon as Shizuku is running, and started again if it ever stops
-- 🏠 **Thor buttons as usual:** Back, Home, Recents and volume keep working while PadBridge holds the Thor's controls, in any handle style
-- 📳 **Rumble, battery and speed:** games' rumble reaches your controllers at the strength the game asks for, and each card shows battery and how fast a controller reports
+## ✨ What's new in 1.1
+- 🧭 **Setup tour:** a few quick questions pick your settings: who is Player 1, the Thor's button positions, how many players and which pad type, your controllers, starting after a restart, and hotkeys. Your current settings are the starting answers
+- 🕹️ **Emulator setup help:** the tour finds the emulators you have (RetroArch, Dolphin, PPSSPP, AetherSX2, DuckStation, Switch and 3DS emulators and more), shows the steps to point each player at its PadBridge pad, and opens the emulator on the other screen so the steps stay in view
+- ⏭️ **Skip any step:** a skipped step keeps its setting, and Settings > About lists skipped steps so you can finish them later
+- 👋 **Offered once, there any time:** the tour is offered on the main screen once PadBridge works, and Settings > About > **Run the tour** opens it again
+- 🔋 **Easier on the battery:** PadBridge checks in less often while the screen is off, and status updates no longer hold up your controllers' input
 
 ---
 
 ## 🌉 What PadBridge does
 PadBridge bridges the Thor's controls and your controllers onto steady player controllers, so you never remap your emulators again.
+- 🧭 **Setup tour:** quick questions that set PadBridge up for how you play, with steps for your emulators
 - 🔌 **Easy connecting:** pair a controller as usual and it lands on the next free player within a second. PadBridge remembers it next time
 - 👥 **Up to 8 players:** cards side by side, in a square or in two rows, with **−** and **+** for how many players games always see
 - 📱 **Who is Player 1:** Thor first, Controller first, or Both Player 1 (put the Thor down and pick up a controller mid-game)
@@ -33,11 +30,12 @@ PadBridge bridges the Thor's controls and your controllers onto steady player co
 - 🔄 **Updates:** check, see what's new, and install from Settings, or reinstall the current release
 
 ## 📜 Release history
+- **1.1:** setup tour with emulator setup help and skippable steps, and better battery life
 - **1.0:** first release: the Thor's controls and your controllers as fixed players, up to 8, with fast input, button mapping, game profiles, hotkeys, player buzz and lights, rumble, battery, and starting by itself
 
 ## 📲 Install
-New to PadBridge? Download `PadBridge.apk` below, open it on the Thor to install, then open PadBridge and follow the setup steps (it needs [Shizuku](https://github.com/RikkaApps/Shizuku/releases/latest)).
+New to PadBridge? Download `PadBridge.apk` below, open it on the Thor to install, then open PadBridge and follow the setup steps, then the setup tour (it needs [Shizuku](https://github.com/RikkaApps/Shizuku/releases/latest)).
 
-Already have an earlier 1.0? Open Settings > Updates > **Check for updates** (or **Reinstall**), or install the download over it. Your settings and emulator mappings stay as they are.
+Already have 1.0? Open Settings > Updates > **Check for updates**, or install the download over it. Your settings and emulator mappings stay as they are, and the main screen offers the new setup tour once.
 
 Later updates: PadBridge tells you when a new version is out, or open Settings > **Check for updates**.
