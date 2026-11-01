@@ -150,8 +150,9 @@ public class GuideService extends AccessibilityService {
             }
             AccessibilityNodeInfo n = null;
             int at = step;
-            // Look ahead a little: if you already went past a step, follow you.
-            for (int s = Math.min(spots.length - 1, step + 2); s >= step; s--) {
+            // The step on show first; only if it's not on screen, look a little ahead in case you
+            // already went past it.
+            for (int s = step; s <= Math.min(spots.length - 1, step + 2); s++) {
                 AccessibilityNodeInfo m = find(spots[s]);
                 if (m != null) {
                     n = m;
