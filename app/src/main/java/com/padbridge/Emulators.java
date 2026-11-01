@@ -162,7 +162,7 @@ final class Emulators {
                         "multitap (up to 8 players)", "multitap"),
                 Spot.look("Set PadBridge Player 1 to Player 1", "padbridge player 1"),
                 Spot.look("Set PadBridge Player 2 to Player 2", "padbridge player 2"),
-                Spot.look("With Multitap on: set PadBridge Player 3 to Player 3, and so on. Otherwise tap Next to finish",
+                Spot.look("Optional, for 3 or more players, set PadBridge Player 3 to Player 3, and so on. Otherwise tap Next to finish",
                         "padbridge player 3")));
         l.add(new Emulator("DuckStation", w("duckstation"),
                 "Open Settings, then Controllers.\n"
