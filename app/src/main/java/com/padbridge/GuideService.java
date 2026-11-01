@@ -43,6 +43,10 @@ public class GuideService extends AccessibilityService {
     private static String pkg;
     private static Emulators.Spot[] spots;
     private static String doneNote = "";
+    /** When the guide last moved on, so it waits a moment before looking ahead. */
+    private static long movedAt;
+    /** The last search found its spot by its words (not a corner button by position). */
+    private boolean byLabel;
     private static int step = -1;
     private static boolean found;
     private static Listener listener;
@@ -63,6 +67,7 @@ public class GuideService extends AccessibilityService {
         spots = guideSpots;
         step = 0;
         found = false;
+        movedAt = android.os.SystemClock.uptimeMillis();
         listener = l;
         if (instance != null) instance.refreshSoon(300);
     }
@@ -82,6 +87,7 @@ public class GuideService extends AccessibilityService {
     static void next() {
         if (spots == null) return;
         step = Math.min(step + 1, spots.length);
+        movedAt = android.os.SystemClock.uptimeMillis();
         found = false;
         if (instance != null) instance.refreshSoon(0);
         tell();
@@ -156,15 +162,18 @@ public class GuideService extends AccessibilityService {
             }
             AccessibilityNodeInfo n = null;
             int at = step;
-            // The step on show first; only if it's not on screen, look a little ahead in case you
-            // already went past it.
-            // An icon-button step (found by its corner) gives way as soon as the next step shows up:
-            // the menu it opened is on screen now.
+            // The step on show first. Only if it's not on screen, and only after a moment (a list
+            // or dialog that a tap opened takes a moment to appear), look one step ahead in case
+            // you already went past it. A step is only skipped to when its words are on screen,
+            // never for a corner button found by position.
             int from = step;
-            if (spots[step].corner != 0 && step + 1 < spots.length && find(spots[step + 1]) != null) from = step + 1;
-            for (int s = from; s <= Math.min(spots.length - 1, from + 1); s++) {
+            boolean settled = android.os.SystemClock.uptimeMillis() - movedAt > 2500;
+            if (spots[step].giveWay && step + 1 < spots.length && find(spots[step + 1]) != null && byLabel) {
+                from = step + 1; // the menu this button opens is on screen now
+            }
+            for (int s = from; s <= Math.min(spots.length - 1, from + (settled ? 1 : 0)); s++) {
                 AccessibilityNodeInfo m = find(spots[s]);
-                if (m != null) {
+                if (m != null && (s == from || byLabel)) {
                     n = m;
                     at = s;
                     break;
@@ -181,6 +190,7 @@ public class GuideService extends AccessibilityService {
             }
             boolean was = found;
             int before = step;
+            if (at != step) movedAt = android.os.SystemClock.uptimeMillis();
             step = at;
             found = n != null;
             int display = n != null ? displayOf(n) : emulatorDisplay();
@@ -201,6 +211,7 @@ public class GuideService extends AccessibilityService {
     private AccessibilityNodeInfo find(Emulators.Spot spot) {
         offscreen = null;
         offscreenScore = 0;
+        byLabel = false;
         // Only the emulator's top window: with a list or dialog open, what's behind it doesn't count.
         AccessibilityWindowInfo top = null;
         for (AccessibilityWindowInfo w : getWindows()) {
@@ -262,6 +273,7 @@ public class GuideService extends AccessibilityService {
                     if (c != null) queue.add(c);
                 }
             }
+            byLabel = best != null;
             if (best != null) return best;
             if (corner != null) return corner;
         }

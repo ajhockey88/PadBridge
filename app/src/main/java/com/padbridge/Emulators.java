@@ -28,6 +28,8 @@ final class Emulators {
         final int corner;
         /** Only something you can tap counts (not a heading with the same words). */
         boolean tap = true;
+        /** A menu button: moves on as soon as the menu it opens is on screen. */
+        boolean giveWay;
 
         Spot(String hint, String... labels) { this(0, hint, labels); }
 
@@ -35,6 +37,11 @@ final class Emulators {
             this.corner = corner;
             this.hint = hint;
             this.labels = labels;
+        }
+
+        static Spot menu(Spot s) {
+            s.giveWay = true;
+            return s;
         }
 
         /** A spot that's a setting's name rather than a button: lit up whether or not it's tappable. */
@@ -136,8 +143,8 @@ final class Emulators {
                         + "and so on for each controller.\n"
                         + "Buttons: under Editing, pick Player 1, tap an action, then press that button on your controller. "
                         + "Usually they're already right.",
-                new Spot(Spot.TOP_LEFT, "Tap the menu button at the top left", "open navigation drawer",
-                        "navigation drawer", "open menu", "menu", "navigation"),
+                Spot.menu(new Spot(Spot.TOP_LEFT, "Tap the menu button at the top left", "open navigation drawer",
+                        "navigation drawer", "open menu", "menu", "navigation")),
                 new Spot("Tap Settings", "settings"),
                 new Spot("Open the Controls tab", "controls"),
                 new Spot("Open Player & Rumble", "player & rumble", "player and rumble"),
