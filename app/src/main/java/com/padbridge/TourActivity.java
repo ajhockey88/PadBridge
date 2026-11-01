@@ -591,7 +591,7 @@ public class TourActivity extends Activity {
         }
         TextView state = Ui.plain(this, now < 0 ? e.done + ". Tap Done."
                 : guideFound ? "Lit up on the other screen. Tap it there, or tap it for me."
-                : "Looking for it on the other screen. If it's further down, scroll to it there, or tap Next if the "
+                : "Looking for it on the other screen. If it's further down, scroll to it there, or tap Next Step if the "
                         + "emulator calls it something else.", 12, Ui.ACCENT_TEXT);
         state.setLineSpacing(0, 1.1f);
         state.setPadding(0, (int) (10 * d), 0, 0);
@@ -606,7 +606,7 @@ public class TourActivity extends Activity {
                 }
             }));
         }
-        if (now >= 0) buttons.addView(small("Next", false, new Runnable() {
+        if (now >= 0) buttons.addView(small("Next Step", false, new Runnable() {
             @Override public void run() { GuideService.next(); }
         }));
         buttons.addView(small(now < 0 ? "Done" : "Stop", now < 0, new Runnable() {
