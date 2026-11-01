@@ -122,9 +122,10 @@ final class EngineControl {
             // status file is gone with the old install, so the app can't see it): ask, then insist.
             "pkill -f 'padbridge-keep[a]live'; pkill -x " + PROCESS + "; sleep 1; pkill -9 -x " + PROCESS + "; "
             // Android's uinput tool runs as app_process with its class in the command line, so
-            // pidof doesn't find it: look through every process's command line.
+            // pidof doesn't find it: look through every process's command line. The [t] keeps
+            // the pattern from matching this shell's own command line.
             + "for p in /proc/[0-9]*; do case \"$(tr '\\0' ' ' < $p/cmdline 2>/dev/null)\" in "
-            + "*commands.uinput.Uinput*) kill -9 ${p#/proc/} 2>/dev/null;; esac; done; true";
+            + "*commands.uinput.Uinpu[t]*) kill -9 ${p#/proc/} 2>/dev/null;; esac; done; true";
 
     private static boolean unpluggedWhileOff;
 
