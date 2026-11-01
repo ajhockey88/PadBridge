@@ -29,7 +29,7 @@ import org.json.JSONObject;
  */
 public final class Engine implements PhysicalPad.Listener, VirtualPads.Listener {
     /** Bumped when the engine changes; the app restarts an engine that doesn't match. */
-    static final int VERSION = 12;
+    static final int VERSION = 13;
     /** struct input_event: 24 bytes with 64-bit timestamps, 16 with 32-bit ones. */
     static final int EVENT_SIZE = System.getProperty("os.arch", "").contains("64") ? 24 : 16;
     private static final int BITS_PER_WORD = EVENT_SIZE == 24 ? 64 : 32;
@@ -126,6 +126,9 @@ public final class Engine implements PhysicalPad.Listener, VirtualPads.Listener 
         }, "PadBridge shutdown"));
         long tick = 0;
         while (true) {
+            // Screen off: nobody is playing, so look around 4 times less often (a controller
+            // still gets its player within a few seconds). Input itself never waits on this loop.
+            boolean awake = Screen.interactive();
             if (tick % 20 == 0 && !apk.exists()) {
                 // PadBridge was updated or uninstalled: this engine is stale.
                 log("app changed, stopping");
@@ -144,12 +147,12 @@ public final class Engine implements PhysicalPad.Listener, VirtualPads.Listener 
                     log("scan failed: " + e);
                 }
             }
-            // The game in front: every half second (every 2 s the slow way).
-            if (Foreground.quick() || tick % 4 == 0) checkForeground();
+            // The game in front: every half second (every 2 s the slow way), only while the screen is on.
+            if (awake && (Foreground.quick() || tick % 4 == 0)) checkForeground();
             if (tick % 20 == 0) readBatteries();
             writeStatus(false);
             tick++;
-            sleep(500);
+            sleep(awake ? 500 : 2000);
         }
         shutdown();
     }
@@ -460,6 +463,9 @@ public final class Engine implements PhysicalPad.Listener, VirtualPads.Listener 
         players.send(player, merged);
     }
 
+    /** An unchanged status is written again this often, so the app knows the engine is alive. */
+    static final long HEARTBEAT_MS = 2000;
+
     private void writeStatus(boolean force) {
         try {
             JSONObject o = new JSONObject();
@@ -471,8 +477,13 @@ public final class Engine implements PhysicalPad.Listener, VirtualPads.Listener 
             o.put("profile", profile);
             o.put("error", error);
             JSONArray list = new JSONArray();
+            // Only the list is taken under the lock, so a controller's report never waits for this.
+            List<PhysicalPad> snapshot;
             synchronized (this) {
-                for (PhysicalPad p : ordered()) {
+                snapshot = ordered();
+            }
+            {
+                for (PhysicalPad p : snapshot) {
                     JSONObject d = new JSONObject();
                     d.put("key", p.dev.key());
                     d.put("name", p.dev.name);
@@ -497,7 +508,7 @@ public final class Engine implements PhysicalPad.Listener, VirtualPads.Listener 
             o.put("controllers", list);
             String body = o.toString();
             long now = System.currentTimeMillis();
-            if (!force && body.equals(lastStatus) && now - lastStatusAt < 1000) return;
+            if (!force && body.equals(lastStatus) && now - lastStatusAt < HEARTBEAT_MS) return;
             lastStatus = body;
             lastStatusAt = now;
             o.put("time", now);

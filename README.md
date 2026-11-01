@@ -206,7 +206,7 @@ report) can be checked on a desktop JVM, no Android needed:
 
 ```
 javac -d build/test -cp deps/android-all-14-robolectric-10818077.jar \
-    app/src/main/java/com/padbridge/{Evdev,PadState,InputScan,PadMapper,Routing,PlayerPad,Battery,Hotkeys,Foreground,Engine,VirtualPads,PhysicalPad,UinputDevice,Native}.java \
+    app/src/main/java/com/padbridge/{Evdev,PadState,InputScan,PadMapper,Routing,PlayerPad,Battery,Hotkeys,Foreground,Engine,VirtualPads,PhysicalPad,UinputDevice,Native,Lights,Screen}.java \
     test/EngineTest.java
 java -cp build/test:deps/android-all-14-robolectric-10818077.jar com.padbridge.EngineTest
 ```
