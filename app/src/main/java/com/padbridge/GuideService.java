@@ -187,6 +187,14 @@ public class GuideService extends AccessibilityService {
                     break;
                 }
             }
+            // A switch step whose switch is already the way it should be: skip it, or it's done.
+            if (n != null && at == step && spots[step].wantOn != null) {
+                Boolean on = switchState(n);
+                if (on != null && on.booleanValue() == spots[step].wantOn) {
+                    next();
+                    return;
+                }
+            }
             // A tap step that was lit up, and whose screen then went away (a pick list that closed as
             // you picked, a page you tapped your way out of): that tap was the step, so move on.
             // Some apps send no tap event for it.
@@ -379,6 +387,28 @@ public class GuideService extends AccessibilityService {
             }
         }
         return b.toString();
+    }
+
+    /** Whether the switch on a setting's row is on: checked state of the row or a switch in it. */
+    private static Boolean switchState(AccessibilityNodeInfo n) {
+        AccessibilityNodeInfo row = n;
+        for (int i = 0; row != null && i < 4; i++, row = row.getParent()) {
+            if (row.isCheckable()) return row.isChecked();
+            // A switch next to the words, in the same row.
+            ArrayDeque<AccessibilityNodeInfo> queue = new ArrayDeque<>();
+            queue.add(row);
+            int seen = 0;
+            while (!queue.isEmpty() && seen++ < 40) {
+                AccessibilityNodeInfo c = queue.poll();
+                if (c.isCheckable()) return c.isChecked();
+                for (int k = 0; k < c.getChildCount(); k++) {
+                    AccessibilityNodeInfo ch = c.getChild(k);
+                    if (ch != null) queue.add(ch);
+                }
+            }
+            if (row.isClickable()) break; // the row ends here
+        }
+        return null;
     }
 
     /** The id of the emulator's top window, or -1. */

@@ -30,6 +30,8 @@ final class Emulators {
         boolean tap = true;
         /** A menu button: moves on as soon as the menu it opens is on screen. */
         boolean giveWay;
+        /** For a switch: done (or skipped) once it's in this state. null: not a switch step. */
+        Boolean wantOn;
 
         Spot(String hint, String... labels) { this(0, hint, labels); }
 
@@ -37,6 +39,13 @@ final class Emulators {
             this.corner = corner;
             this.hint = hint;
             this.labels = labels;
+        }
+
+        /** A switch that should be off: skipped if it already is, done as soon as you turn it off. */
+        static Spot off(String hint, String... labels) {
+            Spot s = look(hint, labels);
+            s.wantOn = false;
+            return s;
         }
 
         static Spot menu(Spot s) {
@@ -148,7 +157,7 @@ final class Emulators {
                 new Spot("Tap Settings", "settings"),
                 new Spot("Open the Controls tab", "controls"),
                 new Spot("Open Player & Rumble", "player & rumble", "player and rumble"),
-                Spot.look("For 2 or more players, turn this off", "all controllers play as player 1"),
+                Spot.off("For 2 or more players, turn this off", "all controllers play as player 1"),
                 Spot.look("Optional, for 3 or more players: turn on Multitap. Otherwise tap Next",
                         "multitap (up to 8 players)", "multitap"),
                 Spot.look("Set PadBridge Player 1 to Player 1", "padbridge player 1"),
