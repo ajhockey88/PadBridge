@@ -241,7 +241,8 @@ public class GuideService extends AccessibilityService {
                 }
                 // An icon button with no words on it (a cog, a menu button): the tappable thing
                 // nearest the spot's corner.
-                if (spot.corner != 0 && inCorner && n.isClickable() && r.width() < win.width() / 4
+                // Not in a dialog: its corner isn't the screen's (a pick list still open after Auto-map).
+                if (spot.corner != 0 && win.left < 8 && win.top < 200 && inCorner && n.isClickable() && r.width() < win.width() / 4
                         && r.height() < win.height() / 5) {
                     long dx = spot.corner == Emulators.Spot.TOP_LEFT ? r.left - win.left : win.right - r.right;
                     long dist = dx * dx + (long) (r.top - win.top) * (r.top - win.top);
