@@ -21,10 +21,16 @@ final class Emulators {
 
     /** One thing to tap in the emulator: what the guide says, and the words on it to look for. */
     static final class Spot {
+        static final int TOP_LEFT = 1, TOP_RIGHT = 2;
         final String hint;
         final String[] labels;
+        /** For an icon button: the corner it's in, so it's found even with no words on it. 0: anywhere. */
+        final int corner;
 
-        Spot(String hint, String... labels) {
+        Spot(String hint, String... labels) { this(0, hint, labels); }
+
+        Spot(int corner, String hint, String... labels) {
+            this.corner = corner;
             this.hint = hint;
             this.labels = labels;
         }
@@ -62,10 +68,10 @@ final class Emulators {
     static List<Emulator> all() {
         List<Emulator> l = new ArrayList<>();
         l.add(new Emulator("Switch emulator", w("eden", "yuzu", "citron", "sudachi", "suyu", "torzu", "strato", "skyline"),
-                "Open Settings, then Input (or Controls).\n"
+                "Tap the cog at the top right (Settings), then Input (or Controls).\n"
                         + "Open Player 1, tap Auto-map a controller and pick PadBridge Player 1."
                         + MANY,
-                new Spot("Open Settings", "settings", "options", "home options"),
+                new Spot(Spot.TOP_RIGHT, "Tap the cog at the top right (Settings)", "settings", "options"),
                 new Spot("Open the controller settings", "input", "controls", "input settings"),
                 new Spot("Open Player 1", "player 1"),
                 new Spot("Tap Auto-map a controller", "auto-map a controller", "auto map a controller", "auto-map"),
@@ -103,7 +109,7 @@ final class Emulators {
                 new Spot("Open Controller Port 1", "controller port 1", "port 1"),
                 new Spot("Tap Automatic Mapping", "automatic mapping"), new Spot("Choose PadBridge Player 1", "padbridge player 1")));
         l.add(new Emulator("ARMSX2", w("armsx2"),
-                "On the Library screen, open the menu at the top left and tap Settings.\n"
+                "On the Library screen, tap the menu button at the top left, then Settings.\n"
                         + "Open the Controls tab.\n"
                         + "Open Player & Rumble.\n"
                         + "For 2 or more players, make sure All controllers play as Player 1 is off.\n"
@@ -114,7 +120,9 @@ final class Emulators {
                         + "and so on for each controller.\n"
                         + "Buttons: under Editing, pick Player 1, tap an action, then press that button on your controller. "
                         + "Usually they're already right.",
-                new Spot("Open the menu at the top left, then tap Settings", "settings"),
+                new Spot(Spot.TOP_LEFT, "Tap the menu button at the top left", "open navigation drawer",
+                        "navigation drawer", "open menu", "menu", "navigation"),
+                new Spot("Tap Settings", "settings"),
                 new Spot("Open the Controls tab", "controls"),
                 new Spot("Open Player & Rumble", "player & rumble", "player and rumble"),
                 new Spot("For 2 or more players, turn this off", "all controllers play as player 1"),

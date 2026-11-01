@@ -152,7 +152,11 @@ public class GuideService extends AccessibilityService {
             int at = step;
             // The step on show first; only if it's not on screen, look a little ahead in case you
             // already went past it.
-            for (int s = step; s <= Math.min(spots.length - 1, step + 2); s++) {
+            // An icon-button step (found by its corner) gives way as soon as the next step shows up:
+            // the menu it opened is on screen now.
+            int from = step;
+            if (spots[step].corner != 0 && step + 1 < spots.length && find(spots[step + 1]) != null) from = step + 1;
+            for (int s = from; s <= Math.min(spots.length - 1, from + 2); s++) {
                 AccessibilityNodeInfo m = find(spots[s]);
                 if (m != null) {
                     n = m;
@@ -179,18 +183,35 @@ public class GuideService extends AccessibilityService {
         for (AccessibilityWindowInfo w : getWindows()) {
             AccessibilityNodeInfo root = w.getRoot();
             if (root == null || root.getPackageName() == null || !pkg.contentEquals(root.getPackageName())) continue;
-            AccessibilityNodeInfo best = null;
+            Rect win = new Rect();
+            w.getBoundsInScreen(win);
+            AccessibilityNodeInfo best = null, corner = null;
             int bestScore = 0;
+            long cornerDist = Long.MAX_VALUE;
+            Rect r = new Rect();
             ArrayDeque<AccessibilityNodeInfo> queue = new ArrayDeque<>();
             queue.add(root);
             int seen = 0;
             while (!queue.isEmpty() && seen++ < 1500) {
                 AccessibilityNodeInfo n = queue.poll();
                 if (!n.isVisibleToUser()) continue;
-                int score = score(n, spot.labels);
+                n.getBoundsInScreen(r);
+                boolean inCorner = spot.corner == 0 || inCorner(r, win, spot.corner);
+                int score = inCorner ? score(n, spot.labels) : 0;
                 if (score > bestScore) {
                     bestScore = score;
                     best = n;
+                }
+                // An icon button with no words on it (a cog, a menu button): the tappable thing
+                // nearest the spot's corner.
+                if (spot.corner != 0 && inCorner && n.isClickable() && r.width() < win.width() / 4
+                        && r.height() < win.height() / 5) {
+                    long dx = spot.corner == Emulators.Spot.TOP_LEFT ? r.left - win.left : win.right - r.right;
+                    long dist = dx * dx + (long) (r.top - win.top) * (r.top - win.top);
+                    if (dist < cornerDist) {
+                        cornerDist = dist;
+                        corner = n;
+                    }
                 }
                 for (int i = 0; i < n.getChildCount(); i++) {
                     AccessibilityNodeInfo c = n.getChild(i);
@@ -198,8 +219,16 @@ public class GuideService extends AccessibilityService {
                 }
             }
             if (best != null) return best;
+            if (corner != null) return corner;
         }
         return null;
+    }
+
+    /** In the top fifth of the window, and its left or right quarter. */
+    private static boolean inCorner(Rect r, Rect win, int corner) {
+        if (r.isEmpty() || r.top > win.top + win.height() / 5) return false;
+        return corner == Emulators.Spot.TOP_LEFT ? r.left < win.left + win.width() / 4
+                : r.right > win.right - win.width() / 4;
     }
 
     /** 3 for the exact words, 2 for words it starts with, 0 for no match. Earlier labels win ties. */
