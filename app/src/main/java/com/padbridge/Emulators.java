@@ -52,6 +52,8 @@ final class Emulators {
         /** The steps, one per line. */
         final String steps;
         final Spot[] spots;
+        /** What the guide says when its steps are done. */
+        String done = "All set. Repeat the process for any additional players.";
         /** Once found: the app's name and app id. */
         String name, pkg;
 
@@ -64,6 +66,7 @@ final class Emulators {
 
         Emulator found(String name, String pkg) {
             Emulator e = new Emulator(kind, words, steps, spots);
+            e.done = done;
             e.name = name;
             e.pkg = pkg;
             return e;

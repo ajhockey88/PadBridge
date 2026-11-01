@@ -575,7 +575,7 @@ public class TourActivity extends Activity {
             t.setPadding(0, (int) (i == 0 ? 10 * d : 5 * d), 0, 0);
             c.addView(t);
         }
-        TextView state = Ui.plain(this, now < 0 ? "All done for Player 1. Do the other players the same way, then Stop."
+        TextView state = Ui.plain(this, now < 0 ? e.done + " Then tap Done."
                 : guideFound ? "Lit up on the other screen. Tap it there, or tap it for me."
                 : "Looking for it on the other screen. If it's further down, scroll to it there, or tap Next if the "
                         + "emulator calls it something else.", 12, Ui.ACCENT_TEXT);
@@ -618,7 +618,7 @@ public class TourActivity extends Activity {
                         }
                         guiding = e.pkg;
                         guideFound = false;
-                        GuideService.start(e.pkg, e.spots, new GuideService.Listener() {
+                        GuideService.start(e.pkg, e.spots, e.done, new GuideService.Listener() {
                             @Override public void onGuideStep(int step, boolean found) {
                                 guideFound = found;
                                 if (steps.get(index).equals(EMULATORS)) fillBody(EMULATORS);

@@ -42,6 +42,7 @@ public class GuideService extends AccessibilityService {
     private static GuideService instance;
     private static String pkg;
     private static Emulators.Spot[] spots;
+    private static String doneNote = "";
     private static int step = -1;
     private static boolean found;
     private static Listener listener;
@@ -56,7 +57,8 @@ public class GuideService extends AccessibilityService {
     static boolean running() { return instance != null; }
 
     /** Starts guiding through an emulator's spots. */
-    static void start(String emulatorPkg, Emulators.Spot[] guideSpots, Listener l) {
+    static void start(String emulatorPkg, Emulators.Spot[] guideSpots, String done, Listener l) {
+        doneNote = done;
         pkg = emulatorPkg;
         spots = guideSpots;
         step = 0;
@@ -73,7 +75,8 @@ public class GuideService extends AccessibilityService {
         if (instance != null) instance.hide();
     }
 
-    static int step() { return step; }
+    /** The step on show, or -1 once the guide is finished (or not running). */
+    static int step() { return spots == null || step >= spots.length ? -1 : step; }
 
     /** Moves to the next spot (the guide's Next), or past the last one: the guide is done. */
     static void next() {
@@ -145,7 +148,10 @@ public class GuideService extends AccessibilityService {
                 return;
             }
             if (step >= spots.length) {
-                hide();
+                // Finished: the closing note on the emulator's screen, with nothing dimmed.
+                target.setEmpty();
+                show(emulatorDisplay(), doneNote, false);
+                if (view != null) view.done();
                 return;
             }
             AccessibilityNodeInfo n = null;
@@ -465,7 +471,7 @@ public class GuideService extends AccessibilityService {
                 return;
             }
         }
-        view.set(lit ? target : null, hint, step + 1, spots.length);
+        view.set(lit ? target : null, hint, Math.min(step + 1, spots.length), spots.length);
     }
 
     private void hide() {
@@ -518,6 +524,12 @@ public class GuideService extends AccessibilityService {
             }
             this.hint = hint;
             this.count = "PADBRIDGE GUIDE · " + n + " OF " + of + (lit ? "" : " · LOOK FOR IT ON SCREEN");
+            invalidate();
+        }
+
+        void done() {
+            lit = false;
+            count = "PADBRIDGE GUIDE · DONE";
             invalidate();
         }
 
