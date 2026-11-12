@@ -1,3 +1,9 @@
+🧹 PadBridge 1.1.1: uninstall PadBridge completely, with nothing left behind.
+
+## ✨ What's new in 1.1.1
+- 🧹 **Uninstall completely:** Settings > About > **Uninstall PadBridge** turns PadBridge off, stops its engine and player pads, gives your controllers back, deletes its diagnostics files in Download, and then uninstalls it. PadBridge changes no Android settings, so nothing else needs undoing
+
+# 1.1
 🧭 PadBridge 1.1: a setup tour that picks the best settings for how you play, plus help setting up your emulators, and an easier time for your battery.
 
 ## ✨ What's new in 1.1
@@ -30,12 +36,13 @@ PadBridge bridges the Thor's controls and your controllers onto steady player co
 - 🔄 **Updates:** check, see what's new, and install from Settings, or reinstall the current release
 
 ## 📜 Release history
+- **1.1.1:** uninstall completely from Settings > About
 - **1.1:** setup tour with emulator setup help and skippable steps, and better battery life
 - **1.0:** first release: the Thor's controls and your controllers as fixed players, up to 8, with fast input, button mapping, game profiles, hotkeys, player buzz and lights, rumble, battery, and starting by itself
 
 ## 📲 Install
 New to PadBridge? Download `PadBridge.apk` below, open it on the Thor to install, then open PadBridge and follow the setup steps, then the setup tour (it needs [Shizuku](https://github.com/RikkaApps/Shizuku/releases/latest)).
 
-Already have 1.0? Open Settings > Updates > **Check for updates**, or install the download over it. Your settings and emulator mappings stay as they are, and the main screen offers the new setup tour once.
+Already have 1.0 or 1.1? Open Settings > Updates > **Check for updates**, or install the download over it. Your settings and emulator mappings stay as they are, and the main screen offers the new setup tour once.
 
 Later updates: PadBridge tells you when a new version is out, or open Settings > **Check for updates**.

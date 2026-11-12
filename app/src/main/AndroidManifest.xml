@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.padbridge"
-    android:versionCode="12"
-    android:versionName="1.1">
+    android:versionCode="14"
+    android:versionName="1.1.1">
 
     <uses-sdk android:minSdkVersion="31" android:targetSdkVersion="33" />
 
@@ -15,6 +15,8 @@
     <!-- Only for GitHub: PadBridge updates. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!-- Settings > About > Uninstall completely, when Shizuku isn't running. -->
+    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
 
     <!-- Setup checks for Shizuku and opens it (Android hides other apps without this). -->
     <queries>

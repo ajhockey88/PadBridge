@@ -158,6 +158,27 @@ devices and screenshots), for bug reports.
 [Releases](https://github.com/ajhockey88/PadBridge/releases) over the old one. Your settings and
 controllers are kept.
 
+🧹 **Uninstalling:** Settings > About > **Uninstall PadBridge** turns PadBridge off, stops its
+engine and player pads, gives your controllers back, deletes its `padbridge-*` diagnostics files
+in Download, and uninstalls it. PadBridge changes no Android settings (no system, secure or
+global settings, app ops, accessibility services or other apps' permissions), so nothing else
+needs undoing.
+
+If you uninstalled it the usual way, the engine stops by itself within about 10 seconds, and a
+restart of the Thor clears anything still running. To check by hand with `adb shell` (or the
+shell in an app like aShell):
+
+```
+ps -A | grep -iE 'padbridge|uinput'               # should print nothing
+grep -i padbridge /proc/bus/input/devices         # no PadBridge Player pads left
+pkill -f padbridge-keepalive; pkill padbridged    # if either showed up
+ls /sdcard/Download | grep padbridge              # diagnostics files you saved, if any
+rm /sdcard/Download/padbridge-*
+```
+
+Emulators keep their own mappings to PadBridge Player 1, 2 and so on; map your controllers in
+them again if you stop using PadBridge.
+
 ## 🛠️ How it works
 
 PadBridge's engine runs on its own as Android's shell user, started through Shizuku, so it keeps
