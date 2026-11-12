@@ -517,6 +517,50 @@ public class SettingsActivity extends Activity {
         thanks.setLineSpacing(0, 1.15f);
         thanks.setPadding(0, (int) (4 * d), 0, 0);
         c.addView(thanks);
+
+        uninstallSection();
+    }
+
+    /** Uninstall PadBridge completely: stops everything it runs and removes its files, then the app. */
+    private void uninstallSection() {
+        LinearLayout c = card();
+        TextView t = plain("🧹 Uninstall completely", 16, Color.WHITE);
+        t.setTypeface(Typeface.DEFAULT_BOLD);
+        c.addView(t);
+        TextView s = plain("PadBridge changes no Android settings. This stops its engine and player pads, gives your "
+                + "controllers back, deletes its diagnostics files in Download, and then uninstalls it.", 13, SUB);
+        s.setPadding(0, (int) (4 * d), 0, (int) (8 * d));
+        c.addView(s);
+        TextView go = Ui.button(this, "Uninstall PadBridge");
+        go.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                Haptics.play(SettingsActivity.this, Haptics.SETTING);
+                confirmUninstall();
+            }
+        });
+        LinearLayout row = new LinearLayout(this);
+        row.addView(go);
+        c.addView(row);
+    }
+
+    private void confirmUninstall() {
+        new AlertDialog.Builder(this)
+                .setTitle("Uninstall PadBridge completely?")
+                .setMessage("PadBridge turns off, its player pads go away and your controllers work as before. "
+                        + "Then PadBridge and all its settings are removed."
+                        + (ShizukuClient.hasPermission() ? "" : "\n\nShizuku isn't running, so Android asks you to "
+                        + "confirm, and padbridge-* diagnostics files in Download stay (delete them yourself)."))
+                .setPositiveButton("Uninstall", new DialogInterface.OnClickListener() {
+                    @Override public void onClick(DialogInterface dialog, int which) {
+                        Toast.makeText(SettingsActivity.this, "Cleaning up and uninstalling…", Toast.LENGTH_LONG).show();
+                        final android.content.Context app = getApplicationContext();
+                        new Thread(new Runnable() {
+                            @Override public void run() { Uninstall.everything(app); }
+                        }, "PadBridge uninstall").start();
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
     /** The setup tour: run it again, or finish the steps skipped last time. */
